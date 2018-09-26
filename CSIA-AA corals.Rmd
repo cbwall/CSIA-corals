@@ -12,9 +12,9 @@ output:
     toc: yes
     toc_depth: '4'
 ---
-```{r setup chunk, setup, fig.dim=c(5,5), warning=FALSE, message=FALSE, fig.align='center'}
+```{r setup chunk, setup, fig.dim=c(5,5), warning=FALSE, message=FALSE}
 require("knitr")
-knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
 
 ###############
 # Carbon and Nitrogen Isotopic Analysis of Individual Amino Acids in Montipora capitata
@@ -105,14 +105,14 @@ ggsave("figures/carbon/PCA_d13C.frac.pdf", height=5, width=8, encod="MacRoman")
 #### Models  
 Run models looking for effects of Fraction or the Treatment-Interaction (feeding/light).
   
-```{r models, fig.dim=c(7,3)}
+```{r models, fig.dim=c(6,3)}
 d13C.dat2<-d13C.dat[!(d13C.dat$Fraction=="plank"),] #remove plankton for now
 
 for(i in c(11:23)){
   Y=d13C.dat2[,i]
   mod<-aov(Y~Fraction+Treat.Int, data=d13C.dat2)
   print(anova(mod))
-  plot(allEffects(mod), ylab=colnames(d13C.dat2)[i], cex.axis=0.5)
+  plot(allEffects(mod), ylab=colnames(d13C.dat2)[i], cex.axis=0.5, cex.lab=0.5)
 }
 # Almost Fraction effect for Alanine, Proline
 # Fraction effect for: Glycine, Glutamic acid
@@ -122,7 +122,7 @@ for(i in c(11:23)){
 
 -New dataframe (long format) here to make figures. Same data as above.
 
-```{r, fig.dim=c(6,3)}
+```{r, fig.dim=c(8,3)}
 ###########
 ###########
 # CSAA.dat long
@@ -149,7 +149,7 @@ d13C.dat.long$AA.cat<-ifelse(d13C.dat.long$AA.short=="Asp" | d13C.dat.long$AA.sh
                                d13C.dat.long$AA.short=="Pro", "Troph", "Source")
 
 mod<-lm(d13C.value~AA.short+Treat.Int*Fraction, data=d13C.dat.long)
-plot(allEffects(mod))
+plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
 
 dfC<-d13C.dat.long
 dfC<-dfC[!(dfC$AA.short == "Thr"), ] # removing Thr because not source or trophic
@@ -320,7 +320,7 @@ ggsave("figures/carbon/d13C.CSIA.no.glyserthr.pdf", height=5, width=8, encod="Ma
 # threonine in host and symbiont (microbial source)
 dfC.thr<-d13C.dat.long[(d13C.dat.long$AA.short=="Thr"),]
 
-AA.means<-aggregate(d13C.value~AA.short+Treat.Int+Fraction, data=dfC.thr, mean, na.rm=TRUE); AA.means
+AA.means<-aggregate(d13C.value~AA.short+Treat.Int+Fraction, data=dfC.thr, mean, na.rm=TRUE)
 AA.sd<-aggregate(d13C.value~AA.short+Treat.Int+Fraction, data=dfC.trim, na.rm=TRUE, sd)
 colnames(AA.sd)[4]="SD"
 AA.means<-cbind(AA.means, AA.sd[4])
@@ -419,7 +419,7 @@ for(i in c(11:23)){
   Y=d15N.dat2[,i]
   mod<-aov(Y~Fraction+Treat.Int, data=d15N.dat2)
   print(anova(mod), cex=0.5)
-  plot(allEffects(mod), ylab=colnames(d15N.dat2)[i])
+  plot(allEffects(mod), ylab=colnames(d15N.dat2)[i], cex.axis=0.5)
 }
 # Fraction effect for: Leucine, Proline, Aspartic Acid, Glutamic Acid, Tyrosine
 # Treatment effect for: Leucine
@@ -428,7 +428,7 @@ for(i in c(11:23)){
 Trophic position using trophic AA gultamic acid (Glu) and source amino acid phenylalanine (Phe), following [Chikarishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
   
 - Trophic Position, showing TP.glu.phe
-```{r}
+```{r, results='hide'}
 ###
 # scatter of glutamic.acid vs. phenylalanine
  
@@ -488,7 +488,7 @@ d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.sh
 
 dfN<-d15N.dat.long
 mod<-lm(d15N.value~AA.short+Treat.Int*Fraction, data=d15N.dat.long)
-plot(allEffects(mod))
+plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
 
 dfN<-d15N.dat.long[!(d15N.dat.long$AA.short=="Thr"), ] # not good source, remove here
 ```
@@ -596,7 +596,7 @@ ggsave("figures/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="Mac
 ```{r, results='hide'}
 ##################
 # all source and trophic) AA
-AA.means<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, mean, na.rm=TRUE); AA.means
+AA.means<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, mean, na.rm=TRUE)
 AA.sd<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, sd, na.rm=TRUE)
 colnames(AA.sd)[4]="SD"
 AA.means<-cbind(AA.means, AA.sd[4])
@@ -743,7 +743,7 @@ sumVdf<-sumVdf[!(sumVdf$Treat.Int=="Plank"), ]
 
 ggplot(sumVdf, aes(x=Treat.Int, y=sumV)) +
   geom_point(aes(color=Fraction), size=3) +
-  coord_cartesian(ylim=c(2, 7))+ 
+  coord_cartesian(ylim=c(5, 7))+ 
   ggtitle("sumV d15N") +
   scale_color_manual(values=c("coral", "springgreen3", "")) +
   scale_x_discrete(name ="Treatments", 
@@ -752,3 +752,6 @@ ggplot(sumVdf, aes(x=Treat.Int, y=sumV)) +
   Fig.formatting
 ggsave("figures/nitrogen/d15N.sumV.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
+  
+<center>
+![](figures/PCAs_compiled.png){ width=100%} </center>
