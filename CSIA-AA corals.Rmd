@@ -25,7 +25,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
 
 # load packages
 library(devtools)
-install_github("ggbiplot", "vqv")
+#install_github("ggbiplot", "vqv")
 library(ggbiplot)
 require(graphics)
 library(dplyr)
@@ -34,6 +34,19 @@ library(plyr)
 library(plotrix)
 library("cowplot")
 ```
+### Background
+Techniques for  Compound Specific Isotope Analysis (CSIA) of individual amino acids (AA) have been developed to better understand ecosystem food webs, trophic positions, and sources of nutrition in biological samples ranging from bacteria to ceteceans. Bulk tissue isotope analysis requires separate accounting for isotopic signatures at the base of the food web, which vary in across locations and time periods. However, CSIA can account for both source and trophic isotope effects in a single sample of a consumer's tissue.
+  
+*Source amino acids* are a group of AA that exhibit little change in isotopic composition with increasing trophic levels and reflect the isotopic composition of the 'source material' at the base of the food web from which they originated. 
+  
+*Trophic amino acids* on the other hand are a group of AA that show significant ^15^N enrichment compared to source-AA, which correspond to trophic steps.This enrichment is quite large and may exceed 8 ‰.  
+
+
+
+<center>
+![](figures/Chikariashi figure.png){ width=70%} </center>
+
+
 ### Carbon
 Carbon in amino acids of plankton, *Symbiodinium* and coral host tissues.
 ```{r Carbon, results='hide'}
@@ -138,7 +151,7 @@ d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "
 
 d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
-# looking at average trophic and sourceAA
+# looking at average trophic and source AA
 # trophic example = glutamate, source = phenylalanine
 # Source AA  not enriched with trophic transfers
 # Trophic AA change with trophic transfers... these are the ones below
@@ -195,7 +208,7 @@ ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4.0, y=0, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10.0, y=0, color="gray40") +
-  ggtitle("d13C by fraction, treatments pooled") +
+  ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction"))) +
          coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") + 
   ylab(ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)")))) +
@@ -221,7 +234,7 @@ df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
 pd <- position_dodge(0.0) #offset for error bars
 ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
   geom_point(size=3, position=pd, aes(shape=Treat.Int, color=Fraction, group=Treat.Int)) +
-  ggtitle("d13C by fraction and treatments") +
+  ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction and treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=0, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10, y=0, color="gray40") +
@@ -249,7 +262,7 @@ pd <- position_dodge(0.5) #offset for error bars
 ggplot(df.mean2, aes(x=AA.short, y=d13C.value, group=Treat.Int)) +
   geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, color=Treat.Int), size=.5, width=0, position=pd) +
   geom_point(aes(color=Treat.Int), size=3, position=pd) +
-  ggtitle("d13C by treatments") +
+  ggtitle(expression(paste(delta^{13}, C[AA], " by treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=0, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10, y=0, color="gray40") +
@@ -276,14 +289,14 @@ pd <- position_dodge(0.5) #offset for error bars
 ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, group=AA.cat, color=Fraction)) +
   geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD), size=.5, width=0, position=pd) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
-  ggtitle("d13C by fraction and Troph/Source") +
+  ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction and Trophic/Source-AA"))) +
   coord_cartesian(ylim=c(-30, -5)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
   scale_color_manual(values=c("coral", "skyblue3", "springgreen3")) +
   ylab(ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)")))) +
   Fig.formatting
-ggsave("figures/carbon/d13C.CSIA_EAA.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/carbon/d13C.CSIA_TrSo.pdf", height=5, width=8, encod="MacRoman")
 ```
   
 - source AA glycine, serine, and threonine removed, showing 13C.CSIA.no.glyserthr
@@ -307,14 +320,14 @@ ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, group=AA.cat, color=Fraction)) +
   coord_cartesian(ylim=c(-30, -5)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
-  ggtitle("d13C no ser/gly/thr") +
+  ggtitle(expression(paste(delta^{13}, C[AA], " by fraction, Tr/So-AA, - Ser/Gly/Thr"))) +
   scale_color_manual(values=c("coral", "skyblue3", "springgreen3")) +
   ylab(ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)")))) +
   Fig.formatting
 ggsave("figures/carbon/d13C.CSIA.no.glyserthr.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- threonine in host and symbiont (microbial source), showing d13C.CSIA_EAA.thr
+- threonine in host and symbiont (microbial source), showing d13C.CSIA_TrSo.thr
 ```{r}
 ##################
 # threonine in host and symbiont (microbial source)
@@ -332,11 +345,11 @@ ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, color=Fraction)) +
   coord_cartesian(ylim=c(0, -30)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
-  ggtitle("d13C threonine") +
+  ggtitle(expression(paste("Threonine ", delta^{13}, C[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   ylab(ylab(expression(paste(delta^{13}, C[AA], " (\u2030, v-PDB)")))) +
   Fig.formatting
-ggsave("figures/carbon/d13C.CSIA_EAA.thr.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/carbon/d13C.CSIA_TrSo.thr.pdf", height=5, width=8, encod="MacRoman")
 ```
 
 ### Nitrogen
@@ -425,8 +438,9 @@ for(i in c(11:23)){
 # Treatment effect for: Leucine
 ```
 ##### Trophic position
-Trophic position using trophic AA gultamic acid (Glu) and source amino acid phenylalanine (Phe), following [Chikarishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
+Trophic position using trophic AA gultamic acid (Glu) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
   
+$Trophic~position~(TP){_C}{_S}{_I}{_A}= [(δ{^1}{^5}N{_T}{_r}{_p}~-~δ{^1}{^5}N{_S}{_r}{_c})-B/~TDF{_A}{_A} +1$
 - Trophic Position, showing TP.glu.phe
 ```{r, results='hide'}
 ###
@@ -434,7 +448,7 @@ Trophic position using trophic AA gultamic acid (Glu) and source amino acid phen
  
        
 ### ### ### 
-### ### ### trophic position using trophic (Glu) and source (Phe) AA, Chikarishi et al. 2009
+### ### ### trophic position using trophic (Glu) and source (Phe) AA, Chikaraishi et al. 2009
 
 d15N.dat # dataframe here
 # glu = trophic AA (changing with food,  show enrichment realtive to source
@@ -454,12 +468,12 @@ ggplot(df.mean, aes(x=Treat.Int, y=TP)) +
   geom_errorbar(aes(ymin=TP-SD, ymax=TP+SD, color=Fraction), 
                 size=.5, width=0, position=pd) +
   geom_point(size=3, pch=19,  position=pd, aes(color=Fraction)) +
-  ggtitle("Chikarishi trophic position") +
+  ggtitle("Chikaraishi trophic position") +
   coord_cartesian(ylim=c(2.5, 0.5)) +
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
-  ylab(ylab(expression(paste(delta^{15}, N[Glu-Phe], " (\u2030, AIR)")))) +
-  scale_color_manual(values=c("coral", "skyblue3", "springgreen3")) +
+  ylab(ylab(expression(paste("TP "~delta^{15}, N[Glu-Phe], " (\u2030, AIR)")))) +
+  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   Fig.formatting
 ggsave("figures/nitrogen/TP.glu.phe.pdf", height=5, width=8, encod="MacRoman")
 ```
@@ -490,7 +504,7 @@ dfN<-d15N.dat.long
 mod<-lm(d15N.value~AA.short+Treat.Int*Fraction, data=d15N.dat.long)
 plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
 
-dfN<-d15N.dat.long[!(d15N.dat.long$AA.short=="Thr"), ] # not good source, remove here
+#dfN<-d15N.dat.long[!(d15N.dat.long$AA.short=="Thr"), ] # not good source, remove here
 ```
 
   
@@ -530,7 +544,7 @@ ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
   geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, color=Fraction), 
                 size=.5, width=0, position=pd) +
   geom_point(size=3, pch=19,  position=pd, aes(color=Fraction)) +
-  ggtitle("d15N by fraction, treatments pooled") +
+  ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction"))) +
   coord_cartesian(ylim=c(15, -5)) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
@@ -554,7 +568,7 @@ df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
 
 ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
   geom_point(size=3, aes(shape=Treat.Int, color=Fraction, group=Treat.Int)) +
-  ggtitle("d15N by fraction and treatments") +
+    ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, treatment"))) +
   coord_cartesian(ylim=c(15, -5)) + 
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
@@ -580,7 +594,7 @@ df.mean2<-cbind(df.mean2, df.SD2[3])
 ggplot(df.mean2, aes(x=AA.short, y=d15N.value, group=Treat.Int)) +
   geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, color=Treat.Int), size=.5, width=0, position=pd) +
   geom_point(aes(color=Treat.Int), size=3, position=pd) +
-  ggtitle("d15N by treatments") +
+  ggtitle(expression(paste(delta^{15}, N[AA], " by treatment"))) +
   coord_cartesian(ylim=c(15, -5)) + 
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
@@ -592,7 +606,7 @@ ggplot(df.mean2, aes(x=AA.short, y=d15N.value, group=Treat.Int)) +
 ggsave("figures/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- all source and trophic AA, showing d15N.CSIA_EAA
+- all source and trophic AA, showing d15N.CSIA_TrSo
 ```{r, results='hide'}
 ##################
 # all source and trophic) AA
@@ -605,17 +619,17 @@ AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, group=AA.cat, color=Fraction)) +
   geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD), size=.5, width=0, position=pd) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
-  ggtitle("d15N by fraction and Troph/EAA") +
+  ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, Tr/So-AA"))) +
   coord_cartesian(ylim=c(12, 0)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
   scale_color_manual(values=c("coral", "springgreen3",  "skyblue3")) +
   ylab(ylab(expression(paste(delta^{15}, N[AA], " (\u2030, AIR)")))) +
   Fig.formatting
-ggsave("figures/nitrogen/d15N.CSIA_EAA.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/nitrogen/d15N.CSIA_TrSo.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- source and trophic AA w/o glycine, serine and threonine, showing d15N.CSIA_EAA.no.glyserthr
+- source and trophic AA w/o glycine, serine and threonine, showing d15N.CSIA_TrSo.no.glyserthr
 ```{r, results='hide', warning=FALSE}
 ##################
 # source and trophic AA w/o glycine  serine and threonine
@@ -635,14 +649,14 @@ ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, group=AA.cat, color=Fraction)) +
   coord_cartesian(ylim=c(14, 0)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
-  ggtitle("d15N no ser/gly/thr") +
+  ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, Tr/So-AA, - Ser/Gly/Thr"))) +
   scale_color_manual(values=c("coral", "springgreen3",  "skyblue3")) +
   ylab(ylab(expression(paste(delta^{15}, N[AA], " (\u2030, AIR)")))) +
   Fig.formatting
-ggsave("figures/nitrogen/d15N.CSIA_EAA.no.glyserthr.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/nitrogen/d15N.CSIA_TrSo.no.glyserthr.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- threonine in host and symbiont (microbial source), showing d15N.CSIA_EAA.thr
+- threonine in host and symbiont (microbial source), showing d15N.CSIA_TrSo.thr
 ```{r, results='hide', warning=FALSE}
 ##################
 # threonine in host and symbiont (microbial source)
@@ -659,15 +673,15 @@ ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, color=Fraction)) +
   coord_cartesian(ylim=c(6, -6)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
-  ggtitle("d15N threonine") +
+  ggtitle(expression(paste("Threonine ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   ylab(ylab(expression(paste(delta^{15}, N[AA], " (\u2030, AIR)")))) +
   Fig.formatting
-ggsave("figures/nitrogen/d15N.CSIA_EAA.thr.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/nitrogen/d15N.CSIA_TrSo.thr.pdf", height=5, width=8, encod="MacRoman")
 ```
 
 ##### Weighted means 
-These are the weighted means for trophic and source AA following [Bradley et al. 2015](https://aslopubs.onlinelibrary.wiley.com/doi/abs/10.1002/lom3.10041).  
+These are the weighted means for trophic and source AA following [Bradley et al. 2015](https://aslopubs.onlinelibrary.wiley.com/doi/abs/10.1002/lom3.10041). Weighted mean AA δ^15^N values  
   
 - weighted means, showing wt.mean.d15N.CSIA
 ```{r, results='hide', warning=FALSE}
@@ -693,7 +707,7 @@ pd <- position_dodge(0.0) #offset for error bars
 ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
   coord_cartesian(ylim=c(8, 0))+ 
-  ggtitle("weighted mean d15N") +
+  ggtitle(expression(paste("Weighted Mean ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3")) +
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
@@ -744,7 +758,7 @@ sumVdf<-sumVdf[!(sumVdf$Treat.Int=="Plank"), ]
 ggplot(sumVdf, aes(x=Treat.Int, y=sumV)) +
   geom_point(aes(color=Fraction), size=3) +
   coord_cartesian(ylim=c(5, 7))+ 
-  ggtitle("sumV d15N") +
+  ggtitle(expression(paste("Sum-V ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3", "")) +
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
