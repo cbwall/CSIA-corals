@@ -757,7 +757,7 @@ sumVdf<-sumVdf[!(sumVdf$Treat.Int=="Plank"), ]
 
 ggplot(sumVdf, aes(x=Treat.Int, y=sumV)) +
   geom_point(aes(color=Fraction), size=3) +
-  coord_cartesian(ylim=c(5, 7))+ 
+  coord_cartesian(ylim=c(0, 3))+ 
   ggtitle(expression(paste("Sum-V ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3", "")) +
   scale_x_discrete(name ="Treatments", 
