@@ -232,7 +232,7 @@ df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
 
 
 pd <- position_dodge(0.0) #offset for error bars
-ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
+ggplot(df.mean, aes(x=AA.short, y=d13C.value), position=pd) +
   geom_point(size=3, position=pd, aes(shape=Treat.Int, color=Fraction, group=Treat.Int)) +
   ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction and treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
@@ -286,8 +286,8 @@ AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 
 
 pd <- position_dodge(0.5) #offset for error bars
-ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, group=AA.cat, color=Fraction)) +
-  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD), size=.5, width=0, position=pd) +
+ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, shape=AA.cat, color=Fraction)) +
+  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, shape=AA.cat, color=Fraction), size=.5, width=0, position=pd) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
   ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction and Trophic/Source-AA"))) +
   coord_cartesian(ylim=c(-30, -5)) + 
@@ -314,14 +314,14 @@ AA.means<-cbind(AA.means, AA.sd[4])
 AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 
 pd <- position_dodge(0.5) #offset for error bars
-ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, group=AA.cat, color=Fraction)) +
-  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD), size=.5, width=0, position=pd) +
+ggplot(AA.means, aes(x=Treat.Int, y=d13C.value, color=Fraction, shape=AA.cat)) +
+  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, color=Fraction, shape=AA.cat), size=.5, width=0, position=pd) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
   coord_cartesian(ylim=c(-30, -5)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
   ggtitle(expression(paste(delta^{13}, C[AA], " by fraction, Tr/So-AA, - Ser/Gly/Thr"))) +
-  scale_color_manual(values=c("coral", "skyblue3", "springgreen3")) +
+  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   ylab(ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)")))) +
   Fig.formatting
 ggsave("figures/carbon/d13C.CSIA.no.glyserthr.pdf", height=5, width=8, encod="MacRoman")
@@ -616,9 +616,9 @@ colnames(AA.sd)[4]="SD"
 AA.means<-cbind(AA.means, AA.sd[4])
 AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 
-ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, group=AA.cat, color=Fraction)) +
-  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD), size=.5, width=0, position=pd) +
-  geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
+ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, shape=AA.cat, color=Fraction)) +
+  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, shape=AA.cat, color=Fraction), size=.5, width=0, position=pd) +
+  geom_point(aes(shape=AA.cat, color=Fraction), size=3, position=pd) +
   ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, Tr/So-AA"))) +
   coord_cartesian(ylim=c(12, 0)) + 
   scale_x_discrete(name ="Treatments", 
@@ -643,8 +643,8 @@ AA.means<-cbind(AA.means, AA.sd[4])
 AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 
 
-ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, group=AA.cat, color=Fraction)) +
-  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD), size=.5, width=0, position=pd) +
+ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, shape=AA.cat, color=Fraction)) +
+  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, color=Fraction, shape=AA.cat), size=.5, width=0, position=pd) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
   coord_cartesian(ylim=c(14, 0)) + 
   scale_x_discrete(name ="Treatments", 
@@ -702,13 +702,16 @@ df.mean$inv.sd<-(1/df.mean$SD)
 #########
 wt.mean<-read.csv("data/wt.means.d15N.csv")
 wt.mean.df<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
-SD<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, sd, na.rm=TRUE)
-#wt.mean.df<-cbind(wt.mean.df, SD[4])
+SD<-aggregate(wt.SD~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE); colnames(SD)[4]<-"wt.SD"
+wt.mean.df<-cbind(wt.mean.df, SD[4])
 
-pd <- position_dodge(0.0) #offset for error bars
+
+pd <- position_dodge(0.4) #offset for error bars
 ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
-  coord_cartesian(ylim=c(8, 0))+ 
+  geom_errorbar(aes(ymin=wt.mean-wt.SD, ymax=wt.mean+wt.SD, color=Fraction, shape=AA.cat), 
+                size=.5, width=0, position=pd) +
+  coord_cartesian(ylim=c(12, 0))+ 
   ggtitle(expression(paste("Weighted Mean ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3")) +
   scale_x_discrete(name ="Treatments", 
@@ -717,25 +720,7 @@ ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
   Fig.formatting
 ggsave("figures/nitrogen/wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
-  
-- delta trophic - source AA, showing wt.mean.d15N.TR.SO.CSIA
-```{r, results='hide', warning=FALSE}
-############
-# delta trophic - source AA
-wt.mean.df2<-aggregate(delt.Tr.So~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
 
-
-ggplot(wt.mean.df2, aes(x=Treat.Int, y=delt.Tr.So)) +
-  geom_point(aes(color=Fraction), size=3) +
-  coord_cartesian(ylim=c(2, -5))+ 
-  ggtitle("All Trophic-Source AA d15N") +
-  scale_color_manual(values=c("coral", "springgreen3")) +
-  scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
-  ylab(ylab(expression(paste(delta^{15}, N[Trophic[AA]-Source [AA]], " (\u2030, AIR)")))) +
-  Fig.formatting
-ggsave("figures/nitrogen/wt.mean.d15N.TR.SO.CSIA.pdf", height=5, width=8, encod="MacRoman")
-```
 
 ##### Sum V
 Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glu, Ile, Leu, and Pro.  
