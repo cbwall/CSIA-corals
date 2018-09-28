@@ -672,7 +672,7 @@ ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, color=Fraction)) +
   geom_point(aes(color=Fraction), size=3, position=pd) +
   coord_cartesian(ylim=c(6, -6)) + 
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
+                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
   ggtitle(expression(paste("Threonine ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   ylab(ylab(expression(paste(delta^{15}, N[AA], " (\u2030, AIR)")))) +
@@ -702,6 +702,8 @@ df.mean$inv.sd<-(1/df.mean$SD)
 #########
 wt.mean<-read.csv("data/wt.means.d15N.csv")
 wt.mean.df<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
+SD<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, sd, na.rm=TRUE)
+#wt.mean.df<-cbind(wt.mean.df, SD[4])
 
 pd <- position_dodge(0.0) #offset for error bars
 ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
@@ -722,10 +724,11 @@ ggsave("figures/nitrogen/wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRo
 # delta trophic - source AA
 wt.mean.df2<-aggregate(delt.Tr.So~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
 
+
 ggplot(wt.mean.df2, aes(x=Treat.Int, y=delt.Tr.So)) +
   geom_point(aes(color=Fraction), size=3) +
   coord_cartesian(ylim=c(2, -5))+ 
-  ggtitle("weighted mean d15N") +
+  ggtitle("All Trophic-Source AA d15N") +
   scale_color_manual(values=c("coral", "springgreen3")) +
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
@@ -741,27 +744,35 @@ Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/ar
 ```{r, results='hide', warning=FALSE}
 ###########################
 # dfN is dataframe
-sV.df<-aggregate(d15N.value~AA.short+AA.cat+Fraction+Treat.Int, data=d15N.dat.long, mean, na.rm=TRUE)
-sV.df.sd<-aggregate(d15N.value~AA.short+AA.cat+Fraction+Treat.Int, data=d15N.dat.long, sd, na.rm=TRUE)
-colnames(sV.df.sd)[5]="SD"
-sV.df$SD<-sV.df.sd$SD
+sV.df<-d15N.dat.long
 
 # make dataframe for AA, that with su deviance = sum-V
-sV.df2<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glu" | sV.df$AA.short=="Asp" | 
+sV.df<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glu" | sV.df$AA.short=="Asp" | 
                   sV.df$AA.short=="Ile" | sV.df$AA.short=="Leu" | sV.df$AA.short=="Pro"),]
 
-write.csv(sV.df2, "sumV.csv")
+#write.csv(sV.df, "sumV.csv")
 
 sumVdf<-read.csv("data/sumV.csv")
-sumVdf<-sumVdf[!(sumVdf$Treat.Int=="Plank"), ]
+sumVdf$Fraction<-factor(sumVdf$Fraction, levels=c("host", "symb", "plank"))
 
-ggplot(sumVdf, aes(x=Treat.Int, y=sumV)) +
-  geom_point(aes(color=Fraction), size=3) +
+sumVdf.mean<-aggregate(sumV~AA.short+AA.cat+Fraction+Treat.Int, data=sumVdf, mean, na.rm=TRUE)
+sumVdf.sd<-aggregate(sumV~AA.short+AA.cat+Fraction+Treat.Int, data=sumVdf, sd, na.rm=TRUE)
+sumVdf<-cbind(sumVdf.mean, sumVdf.sd[5])
+colnames(sumVdf)[5]<-"mean.sumV"
+colnames(sumVdf)[6]="SD"
+sumVdf[is.na(sumVdf)] <- 0
+
+pd <- position_dodge(0.7) #offset for error bars and columns
+
+ggplot(sumVdf, aes(x=Treat.Int, y=mean.sumV)) +
+  geom_point(aes(color=Fraction), size=3, position=pd) +
+  geom_errorbar(aes(ymin=mean.sumV-SD, ymax=mean.sumV+SD, color=Fraction), 
+                size=.5, width=0, position=pd) +
   coord_cartesian(ylim=c(0, 3))+ 
   ggtitle(expression(paste("Sum-V ", delta^{15}, N[AA]))) +
-  scale_color_manual(values=c("coral", "springgreen3", "")) +
+  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
+                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
   ylab(ylab(expression(paste(delta^{15}, N[Sum-V], "(\u2030, AIR)")))) +
   Fig.formatting
 ggsave("figures/nitrogen/d15N.sumV.CSIA.pdf", height=5, width=8, encod="MacRoman")
