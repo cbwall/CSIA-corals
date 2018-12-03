@@ -1,2 +1,2 @@
-# CSIA-corals
-Compound specific isotope analyses of coral amino acids
+# AA-CSIA-corals
+Amino acid compound specific isotope analyses of reef corals, their symbiont algae, and a plankton endmember.
