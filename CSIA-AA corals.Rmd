@@ -36,7 +36,7 @@ library("cowplot")
 ```
 
 ### Background
-Techniques for  Compound Specific Isotope Analysis (CSIA) of individual amino acids (AA) have been developed to better understand ecosystem food webs, trophic positions, and sources of nutrition in biological samples ranging from bacteria to ceteceans. Bulk tissue isotope analysis requires separate accounting for isotopic signatures at the base of the food web, which vary in across locations and time periods. However, CSIA can account for both source and trophic isotope effects in a single sample of a consumer's tissue.
+Techniques for  Compound Specific Isotope Analysis (CSIA) of individual amino acids (AA) have been developed to better understand ecosystem food webs, trophic positions, and sources of nutrition in biological samples ranging from bacteria to cetaceans. Bulk tissue isotope analysis requires separate accounting for isotopic signatures at the base of the food web, which vary in across locations and time periods. However, CSIA can account for both source and trophic isotope effects in a single sample of a consumer's tissue.
   
 *Source amino acids* are a group of AA that exhibit little change in isotopic composition with increasing trophic levels and reflect the isotopic composition of the 'source material' at the base of the food web from which they originated. 
   
@@ -70,6 +70,32 @@ d15N.dat<-d15N.dat[ , !(names(d15N.dat) %in% c("Norleucine", "Aminoadipic.Acid",
 d15N.dat$Fraction<-factor(d15N.dat$Fraction, levels=c("host", "symb", "plank"))
 ```
   
+#### Permanova
+```{r}
+## Permanova carbon
+d13C.dat.perm<- d13C.dat[!(d13C.dat$Fraction=="plank"),]
+df.manova.C<-d13C.dat.perm[, c(11:23)] # remove factor columns
+df.manova.C.abs<-abs(df.manova.C) # change all to absolute values 
+
+set.seed(138)
+perman.C<-adonis2(df.manova.C.abs~Fraction*Treat.Int, data=d13C.dat.perm, permutations=1000, 
+                method="bray", sqrt.dist = TRUE)
+perman.C
+write.csv(perman.C, "output/perman.C.csv")
+
+## Permanova nitrogen
+d15N.dat.perm<- d15N.dat[!(d15N.dat$Fraction=="plank"),]
+d15N.dat.perm$Threonine<-d15N.dat.perm$Threonine+3 # adding a constant to make positive values
+d15N.dat.perm$Phenylalanine<-d15N.dat.perm$Phenylalanine+3 # adding a constant to make positive values
+
+df.manova.N<-d15N.dat.perm[, c(11:23)] # remove factor columns
+
+set.seed(138)
+perman.N<-adonis2(df.manova.N~Fraction*Treat.Int, data=d15N.dat.perm, permutations=1000, 
+                method="bray", sqrt.dist = TRUE)
+perman.N
+write.csv(perman.N, "output/perman.N.csv")
+```
 
 #### PCA 
 
@@ -79,17 +105,17 @@ d15N.dat$Fraction<-factor(d15N.dat$Fraction, levels=c("host", "symb", "plank"))
 ######## ######## ######## ######## 
 ######## ######## ######## ######## by treatment
 # PCA dataframe
-PCA.df<-d13C.dat[, c(7:8,11:23)]
+PCA.df.C<-d13C.dat[, c(7:8,11:23)]
 
-PC<- prcomp(PCA.df[,c(-1:-2)], center = TRUE, scale= TRUE) 
-PC.summary<-summary(PC)
-ev<-PC$sdev^2 
-newdat<-PC$x[,1:4] # 2 PCAs explain 76% of variance
+PC.C<- prcomp(PCA.df.C[,c(-1:-2)], center = TRUE, scale= TRUE) 
+PC.C.summary<-summary(PC.C)
+ev.C<-PC.C$sdev^2 
+newdat.C<-PC.C$x[,1:4] # 2 PCAs explain 81% of variance
 #plot(PC, type="lines", main="PC.area eigenvalues")
 
 ## PC1 and PC2
-PC.fig1 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                             groups= PCA.df[,1], ellipse = TRUE,
+PC.fig1.C.trt <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                             groups= PCA.df.C[,1], ellipse = TRUE,
                              circle = FALSE) +
   scale_color_discrete(name = '') +
   theme_bw() +
@@ -101,24 +127,25 @@ PC.fig1 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1,
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=6, y=3.6,  size=5, label= expression(paste(delta^{13},C[AA])))
-print(PC.fig1)
+print(PC.fig1.C.trt)
 #ggsave("figures/carbon/PCA_d13C.trt.pdf", height=5, width=8, encod="MacRoman")
+
 ```
   
 **Nitrogen by treatment**
 ```{r PCA nitrogen by treatment, results='hide', message=FALSE}
 # PCA dataframe
-PCA.df<-d15N.dat[, c(7:8,11:23)]
-PC<- prcomp(PCA.df[, c(-1:-2)], center = TRUE, scale= TRUE) 
-PC.summary<-summary(PC)
-ev<-PC$sdev^2 
-newdat<-PC$x[,1:4] # 2 PCAs explain 74% of variance
+PCA.df.N<-d15N.dat[, c(7:8,11:23)]
+PC.N<- prcomp(PCA.df.N[, c(-1:-2)], center = TRUE, scale= TRUE) 
+PC.N.summary<-summary(PC.N)
+ev.N<-PC.N$sdev^2 
+newdat.N<-PC.N$x[,1:4] # 2 PCAs explain 74% of variance
 #plot(PC, type="lines", main="PC.area eigenvalues")
 
 ######################## treatments
 ## PC1 and PC2
-PC.fig2 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                   groups= PCA.df[,1], ellipse = TRUE,
+PC.fig2.N.trt <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                   groups= PCA.df.N[,1], ellipse = TRUE,
                    circle = FALSE) +
   scale_color_discrete(name = '') +
   theme_bw() +
@@ -129,7 +156,7 @@ PC.fig2 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1,
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=4, y=5.5,  size=5, label= expression(paste(delta^{15},N[AA])))
-print(PC.fig2)
+print(PC.fig2.N.trt)
 #ggsave("figures/nitrogen/PCA_d15N.trt.pdf", height=5, width=6, encod="MacRoman")
 ```
   
@@ -138,8 +165,8 @@ print(PC.fig2)
 ######## ######## ######## ######## 
 ######## ######## ######## ######## by fraction
 
-PC.fig3 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                   groups= PCA.df[,2], ellipse = TRUE,
+PC.fig3.C.frac <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                   groups= PCA.df.C[,2], ellipse = TRUE,
                    circle = FALSE) +
   scale_color_discrete(name = '') +
   theme_bw() +
@@ -150,7 +177,7 @@ PC.fig3 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1,
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=6, y=3.6,  size=5, label= expression(paste(delta^{13},C[AA])))
-print(PC.fig3)
+print(PC.fig3.C.frac)
 #ggsave("figures/carbon/PCA_d13C.frac.pdf", height=5, width=8, encod="MacRoman")
 ```
 
@@ -158,8 +185,8 @@ print(PC.fig3)
 ```{r PCA nitrogen by fraction, results='hide', message=FALSE}
 ######################### fractions
 ## PC1 and PC2
-PC.fig4 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                   groups= PCA.df[,2], ellipse = TRUE,
+PC.fig4.N.frac <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                   groups= PCA.df.N[,2], ellipse = TRUE,
                    circle = FALSE) +
   scale_color_discrete(name = '') +
   theme_bw() +
@@ -170,7 +197,7 @@ PC.fig4 <- ggbiplot(PC, choices = 1:2, obs.scale = 1, var.scale = 1,
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=4, y=5.5,  size=5, label= expression(paste(delta^{15},N[AA])))
-print(PC.fig4)
+print(PC.fig4.N.frac)
 #ggsave("figures/nitrogen/PCA_d15N.frac.pdf", height=5, width=8, encod="MacRoman")
 ```
   
@@ -181,17 +208,43 @@ Run models looking for effects of Fraction or the Treatment-Interaction (feeding
   
 ```{r models, fig.dim=c(6,3)}
 d13C.dat2<-d13C.dat[!(d13C.dat$Fraction=="plank"),] #remove plankton for now
+d13C.host<-d13C.dat[(d13C.dat$Fraction=="host"),] # just host
+d13C.symb<-d13C.dat[(d13C.dat$Fraction=="symb"),] # just symbiont
 
 for(i in c(11:23)){
   Y=d13C.dat2[,i]
   mod<-aov(Y~Fraction+Treat.Int, data=d13C.dat2)
   print(anova(mod))
+  print(TukeyHSD(mod))
   plot(allEffects(mod), ylab=colnames(d13C.dat2)[i], cex.axis=0.5, cex.lab=0.5)
 }
 # Almost Fraction effect for Alanine, Proline
 # Fraction effect for: Glycine, Glutamic acid
 # Treatment effect for: Glycine
 # Almost Treatment effect: Glutamic Acid
+
+############ just host
+for(i in c(11:23)){
+  Y=d13C.host[,i]
+  mod<-aov(Y~Treat.Int, data=d13C.host)
+  print(anova(mod))
+  #print(TukeyHSD(mod))
+  plot(allEffects(mod), ylab=colnames(d13C.host)[i], cex.axis=0.5, cex.lab=0.5)
+}
+# If running only "Treat.Int" no effects accept p=0.06 for glycine
+# If running "Light.Trt+Feed.Trt" then p=0.03 for glycine
+
+############ just symbiont
+for(i in c(11:23)){
+  Y=d13C.symb[,i]
+  mod<-aov(Y~Treat.Int, data=d13C.symb)
+  print(anova(mod))
+  #print(TukeyHSD(mod))
+  plot(allEffects(mod), ylab=colnames(d13C.symb)[i], cex.axis=0.5, cex.lab=0.5)
+}
+# If running only "Treat.Int" no effects
+# If running "Light.Trt+Feed.Trt" then p=0.03 for serine
+
 ```
   
   
@@ -211,31 +264,27 @@ d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Aminoadipic Acid"),] #
 
 d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Gly", "Glu", "Pro", "Ser", "Tyr", "Ile", "Leu", "Lys", "Phe", "Thr", "Val"))
 
-# looking at average trophic and source AA
-# trophic example = glutamate, source = phenylalanine
-# Source AA  not enriched with trophic transfers
-# Trophic AA change with trophic transfers... these are the ones below
 
-d13C.dat.long$AA.cat<-ifelse(d13C.dat.long$AA.short=="Asp" | d13C.dat.long$AA.short=="Glu" | 
-                               d13C.dat.long$AA.short=="Ala" | d13C.dat.long$AA.short=="Ile" | 
-                               d13C.dat.long$AA.short=="Leu" | d13C.dat.long$AA.short=="Val" | 
-                               d13C.dat.long$AA.short=="Pro", "Troph", "Source")
+# looking at average essential and non-essential AA
+d13C.dat.long$AA.cat<-ifelse(d13C.dat.long$AA.short=="Ala" |d13C.dat.long$AA.short=="Asp" |
+                               d13C.dat.long$AA.short=="Gly" | d13C.dat.long$AA.short=="Glu" |
+                               d13C.dat.long$AA.short=="Pro" | d13C.dat.long$AA.short=="Ser" | 
+                               d13C.dat.long$AA.short=="Tyr", "Non-EAA", "EAA")
 
-mod<-lm(d13C.value~AA.short+Treat.Int*Fraction, data=d13C.dat.long)
+mod<-lm(d13C.value~AA.short+Fraction+Treat.Int, data=d13C.dat.long)
 print(anova(mod))
 #plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
 
 dfC<-d13C.dat.long
-dfC<-dfC[!(dfC$AA.short == "Thr"), ] # removing Thr because not source or trophic
 ```
   
-#### Table: Carbon Essential and Nonessential AA
+#### Table: Carbon Essential and Non-essential AA
 
 ```{r EAA and NEAA, results='hide'}
 ##################
-# all trophic and source AA
+# all essentail and non-essential AA
 AA.means<-aggregate(d13C.value~AA.cat+Treat.Int+Fraction, data=dfC, mean, na.rm=TRUE); AA.means
 AA.sd<-aggregate(d13C.value~AA.cat+Treat.Int+Fraction, data=dfC, sd, na.rm=TRUE)
 colnames(AA.sd)[4]="SD"
@@ -258,6 +307,16 @@ df.mean<-cbind(df.mean, df.SD[4])
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
 
 
+## d13C just by fraction
+df.mean.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, mean, na.rm=TRUE)
+df.n.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, length)
+df.SD.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, sd, na.rm=TRUE)
+colnames(df.SD.frac)[3]="SD"
+df.mean.frac<-cbind(df.mean.frac, df.SD.frac[3])
+df.mean.frac$Fraction<-factor(df.mean.frac$Fraction, levels=c("host", "symb", "plank"))
+write.csv(df.mean.frac, "output/d13C.mean.frac.csv")
+
+
 ######## Figures
 Fig.formatting<-(theme_classic()) +
   theme(text=element_text(size=10),
@@ -277,7 +336,6 @@ Fig.formatting<-(theme_classic()) +
   theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
 
 #######
-
 pd <- position_dodge(0.5) #offset for error bars
 
 d13C.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
@@ -286,8 +344,8 @@ d13C.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
                 size=.5, width=0, position=pd) +
   ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction and treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
-  annotate(geom="text", label="Essential-AA", x=4, y=0, color="gray40") +
-  annotate(geom="text", label="Nonessential-AA", x=10, y=0, color="gray40") +
+  annotate(geom="text", label="Nonessential-AA", x=4, y=0, color="gray40") +
+  annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") +
   scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
@@ -316,8 +374,8 @@ pd <- position_dodge(0.5) #offset for error bars
   geom_point(aes(color=Treat.Int), size=2, position=pd) +
   ggtitle(expression(paste(delta^{13}, C[AA], " by treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
-  annotate(geom="text", label="Essential-AA", x=4, y=0, color="gray40") +
-  annotate(geom="text", label="Nonessential-AA", x=10, y=0, color="gray40") +
+  annotate(geom="text", label="Nonessential-AA", x=4, y=0, color="gray40") +
+  annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") +
   scale_color_manual(values=c("gray40", "darkgoldenrod1", "coral", "skyblue2")) +
@@ -331,15 +389,25 @@ print(d13C.CSIA_Trt.alone)
 - d13C by fraction, showing d13C.CSIA_frac -- move to **Supplement**
 ```{r}
 # all AA pooled by fraction
+
+
+df.mean3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, mean, na.rm=TRUE)
+df.SD3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, na.rm=TRUE, sd)
+df.SD3[is.na(df.SD3)] <- 0
+colnames(df.SD3)[3]="SD"
+df.mean3<-cbind(df.mean3, df.SD3[3])
+df.mean3$Fraction<-factor(df.mean3$Fraction, levels=c("host", "symb", "plank"))
+
+
 pd <- position_dodge(0.5) #offset for error bars
 
-d13C.CSIA_Fraction<- ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
+d13C.CSIA_Fraction<- ggplot(df.mean3, aes(x=AA.short, y=d13C.value)) +
   geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, color=Fraction), 
                 size=.5, width=0, position=pd) +
   geom_point(size=2, pch=19,  position=pd, aes(color=Fraction)) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
-  annotate(geom="text", label="Trophic-AA", x=4.0, y=0, color="gray40") +
-  annotate(geom="text", label="Source-AA", x=10.0, y=0, color="gray40") +
+  annotate(geom="text", label="Nonessential-AA", x=4, y=0, color="gray40") +
+  annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
   ggtitle(expression(paste(delta^{13}, C[AA], " by biological fraction"))) +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") + 
@@ -367,6 +435,7 @@ for(i in c(11:23)){
   Y=d15N.dat2[,i]
   mod<-aov(Y~Fraction+Treat.Int, data=d15N.dat2)
   print(anova(mod), cex=0.5)
+  #print(TukeyHSD(mod))
   plot(allEffects(mod), ylab=colnames(d15N.dat2)[i], cex.axis=0.5)
 }
 # Fraction effect for: Leucine, Proline, Aspartic Acid, Glutamic Acid, Tyrosine
@@ -416,6 +485,7 @@ df.SD[is.na(df.SD)] <- 0
 colnames(df.SD)[3]="SD"
 df.mean<-cbind(df.mean, df.SD[3])
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
+write.csv(df.mean, "output/d15N.frac.meansd.csv")
 
 Fig.formatting<-(theme_classic()) +
   theme(text=element_text(size=10),
@@ -696,7 +766,7 @@ ggsave("figures/wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```{r, fig.dim=c(8,8), results='hide'}
 #### compile the 4 PCA ###
 library("cowplot")
-plot_grid(PC.fig1, PC.fig2, PC.fig3, PC.fig4, ncol = 2)
+plot_grid(PC.fig3.C.frac, PC.fig4.N.frac, PC.fig1.C.trt, PC.fig2.N.trt, ncol = 2)
 ggsave("figures/Fig 1.PCAs.pdf", height=8, width=11, encod="MacRoman")
 ######
 ```
