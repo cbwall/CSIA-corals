@@ -468,7 +468,7 @@ plot_grid(LDA.C.frac, LDA.N.frac)
 
 # LDA dataframe
 # looking at Non-essential AA and Essential 
-# Non-EAA = Ala, Asp, Gly, Glu, Pro, Ser, Tyr
+# Non-EAA = Ala, Asp, Gly, Glx, Pro, Ser, Tyr
 # EAA = Ile, Leu, Lys, Phe, Thr, Val
 
 
@@ -476,7 +476,7 @@ plot_grid(LDA.C.frac, LDA.N.frac)
 ########################## Non-EAA C
 
 # looking Non-EAA
-# Non-EAA = Ala, Asp, Gly, Glu, Pro, Ser, Tyr
+# Non-EAA = Ala, Asp, Gly, Glx, Pro, Ser, Tyr
                                
 LDA.df.NEAAC<-LDA.d13C %>% 
   select(Fraction, Alanine, Aspartic.acid, Glycine, Glutamic.acid, Proline, Serine, Tyrosine) 
@@ -619,7 +619,7 @@ plot_grid(LDA.C.NEAA, LDA.C.EAA)
 
 # LDA dataframe
 # looking at  Trophic and Source
-# Trophic = Ala, Asp, Glu, Ile, Leu, Val, Pro
+# Trophic = Ala, Asp, Glx, Ile, Leu, Val, Pro
 # Source = Gly, Set, Ser, Phe, Thr, Tyr
 
 
@@ -825,16 +825,16 @@ d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Methionine"),]
 d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Norleucine"),]
 d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Gly", "Glu", "Pro", "Ser", "Tyr", "Ile", "Leu", "Lys", "Phe", "Thr", "Val"))
+d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Gly", "Glx", "Pro", "Ser", "Tyr", "Ile", "Leu", "Lys", "Phe", "Thr", "Val"))
 
 d13C.dat.long$Treat.Int<-factor(d13C.dat.long$Treat.Int, levels=c("L-NF", "L-F", "D-F", "Plank"))
 
 
 # looking at average essential and non-essential AA
 d13C.dat.long$AA.cat<-ifelse(d13C.dat.long$AA.short=="Ala" |d13C.dat.long$AA.short=="Asp" |
-                               d13C.dat.long$AA.short=="Gly" | d13C.dat.long$AA.short=="Glu" |
+                               d13C.dat.long$AA.short=="Gly" | d13C.dat.long$AA.short=="Glx" |
                                d13C.dat.long$AA.short=="Pro" | d13C.dat.long$AA.short=="Ser" | 
                                d13C.dat.long$AA.short=="Tyr", "Non-EAA", "EAA")
 
@@ -1026,12 +1026,12 @@ d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Methionine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Norleucine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
 # looking at average Trophic and Source
-d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glu" | 
+d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glx" | 
                                d15N.dat.long$AA.short=="Ala" | d15N.dat.long$AA.short=="Ile" | 
                                d15N.dat.long$AA.short=="Leu" | d15N.dat.long$AA.short=="Val" | 
                                d15N.dat.long$AA.short=="Pro", "Troph", "Source")
@@ -1152,8 +1152,11 @@ print(d15N.CSIA_Trt.alone)
 #ggsave("figures/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- all source and trophic AA, showing d15N.CSIA_TrSo **supplement**
-```{r, results='hide'}
+
+```{r, results='hide', eval=FALSE}
+# all source and trophic AA, showing d15N.CSIA_TrSo **supplement**
+  
+  
 ##################
 # all source and trophic) AA
 AA.means<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, mean, na.rm=TRUE)
@@ -1180,21 +1183,21 @@ ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, shape=AA.cat, color=Fraction)) +
 
   
 ##### Trophic position and proxy  
-Trophic position using trophic AA gultamic acid (Glu) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
+Trophic position using trophic AA gultamic acid (Glx) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
   
 $Trophic~position~(TP){_C}{_S}{_I}{_A}= [(δ{^1}{^5}N{_T}{_r}{_p}~-~δ{^1}{^5}N{_S}{_r}{_c})-B/~TDF{_A}{_A} +1$  
   
-- Trophic Position, showing TP.glu.phe
+- Trophic Position, showing TP.glx.phe
 ```{r, results='hide'}
 ###
 # scatter of glutamic.acid vs. phenylalanine
  
        
 ### ### ### 
-### ### ### trophic position using trophic (Glu) and source (Phe) AA, Chikaraishi et al. 2009
+### ### ### trophic position using trophic (Glx) and source (Phe) AA, Chikaraishi et al. 2009
 
 d15N.dat # dataframe here
-# glu = trophic AA (changing with food,  show enrichment realtive to source
+# glx = trophic AA (changing with food,  show enrichment realtive to source
 # phe = source AA (showlittle change with increasing trophic position, reflect d15N baseline)
 # beta = 3.4 (difference in d15N values among trophic and source AAs in primary producers, @ TP=1)
 # TDFAA = trophic discrimination factor: mean 15N enrichment of >=1 trophic vs. source AA per trophic level
@@ -1222,18 +1225,18 @@ TP<-ggplot(df.mean, aes(x=Treat.Int, y=TP)) +
   ggtitle("Chikaraishi trophic position") +
   coord_cartesian(ylim=c(0, 3)) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
-  ylab(expression(paste("TP "~delta^{15}, N[Glu-Phe], " (\u2030, Air)"))) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed", "Plankton")) +
+  ylab(expression(paste("TP "~delta^{15}, N[Glx-Phe], " (\u2030, Air)"))) +
   scale_shape_manual(values=c(19,19,3))+
   scale_color_manual(values=frac.color) +
   Fig.formatting
 #print(TP)
-#ggsave("figures/nitrogen/TP.glu.phe.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/nitrogen/TP.glx.phe.pdf", height=5, width=8, encod="MacRoman")
 ```
   
   
 ##### Sum V
-Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glu, Ile, Leu, and Pro.  
+Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glx, Ile, Leu, and Pro.  
 
 - showing d15N.sumV.CSIA **move to supplement**
 ```{r, results='hide', warning=FALSE}
@@ -1248,12 +1251,12 @@ d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Methionine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Norleucine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
 # looking at average Trophic and Source
-d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glu" | 
+d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glx" | 
                                d15N.dat.long$AA.short=="Ala" | d15N.dat.long$AA.short=="Ile" | 
                                d15N.dat.long$AA.short=="Leu" | d15N.dat.long$AA.short=="Val" | 
                                d15N.dat.long$AA.short=="Pro", "Troph", "Source")
@@ -1270,7 +1273,7 @@ dfN<-d15N.dat.long
 sV.df<-dfN[!(dfN$AA.short=="Thr"), ] # not good source, remove here
 
 # make dataframe for AA, that with su deviance = sum-V
-sV.df<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glu" | sV.df$AA.short=="Asp" | 
+sV.df<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glx" | sV.df$AA.short=="Asp" | 
                   sV.df$AA.short=="Ile" | sV.df$AA.short=="Leu" | sV.df$AA.short=="Pro"),]
 
 #write.csv(sV.df, "sumV.csv")
@@ -1293,6 +1296,7 @@ sumVdf<-cbind(sumVdf.mean, sumVdf.sd[5])
 colnames(sumVdf)[5]<-"mean.sumV"
 colnames(sumVdf)[6]="SD"
 sumVdf[is.na(sumVdf)] <- 0
+sumVdf$Treat.Int<- factor(sumVdf$Treat.Int, levels=c("L-NF", "L-F", "D-F"))
 
 pd <- position_dodge(0.7) #offset for error bars and columns
 
@@ -1304,7 +1308,7 @@ sumV<-ggplot(sumVdf, aes(x=Treat.Int, y=mean.sumV)) +
   ggtitle(expression(paste("Sum-V ", delta^{15}, N[AA]))) +
   scale_color_manual(values=frac.color) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed", "Plankton")) +
   ylab(expression(paste(delta^{15}, N[Sum-V], " (\u2030, Air)"))) +
   Fig.formatting
 #print(sumV)
@@ -1337,7 +1341,7 @@ wt.mean<-read.csv("data/wt.means.d15N.csv")
 wt.mean.df<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
 SD<-aggregate(wt.SD~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE); colnames(SD)[4]<-"wt.SD"
 wt.mean.df<-cbind(wt.mean.df, SD[4])
-
+wt.mean.df$Treat.Int<- factor(wt.mean.df$Treat.Int, levels=c("L-NF", "L-F", "D-F"))
 
 ######## model
 wt.mean.mod<-wt.mean[!(wt.mean$Fraction=="plank"),]
@@ -1354,7 +1358,7 @@ ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
   ggtitle(expression(paste("Weighted Mean ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3")) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed")) +
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
 ggsave("figures/Fig S4.wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
@@ -1509,14 +1513,14 @@ Fox.data$Fraction<-  revalue(Fox.data$Fraction, c("Animal"="host.Pal", "Zoox"="s
        
 # select columns
 Fox.data<- Fox.data %>%
-  select(Location, Species, Fraction, Ala13C, Gly13C, Thr13C, Ser13C, Val13C, Leu13C, Ile13C, Pro13C, Asp13C, Glu13C, Phe13C, Tyr13C, Lys13C)
+  select(Location, Species, Fraction, Ala13C, Gly13C, Thr13C, Ser13C, Val13C, Leu13C, Ile13C, Pro13C, Asp13C, Glx13C, Phe13C, Tyr13C, Lys13C)
 
 # rename AA
 
 Fox.data<-  plyr::rename(Fox.data, c("Ala13C"="Ala", "Gly13C"="Gly", "Thr13C" = "Thr", 
                                       "Ser13C" = "Ser", "Val13C" = "Val", "Leu13C" = "Leu",
                                     "Ile13C" = "Ile", "Pro13C"= "Pro", "Asp13C" = "Asp",
-                                     "Glu13C" = "Glu", "Phe13C" = "Phe", "Tyr13C" = "Tyr", "Lys13C" = "Lys"))
+                                     "Glx13C" = "Glx", "Phe13C" = "Phe", "Tyr13C" = "Tyr", "Lys13C" = "Lys"))
 
 #### Kaneohe, Oahu data
 Wall.data<-d13C.dat
@@ -1536,13 +1540,14 @@ Wall.data<-Wall.data %>%
 Wall.data<- plyr::rename(Wall.data, c("Alanine"="Ala", "Glycine"="Gly", "Threonine" = "Thr", 
                                       "Serine" = "Ser", "Valine" = "Val", "Leucine" = "Leu",
                                     "Isoleucine" = "Ile", "Proline"= "Pro", "Aspartic.acid" = "Asp",
-                                     "Glutamic.acid" = "Glu", "Phenylalanine" = "Phe", 
+                                     "Glutamic.acid" = "Glx", "Phenylalanine" = "Phe", 
                                     "Tyrosine" = "Tyr", "Lysine" = "Lys"))
 
 # combine the dataframes
 Pacific.AA<-rbind(Fox.data, Wall.data)
 Pacific.AA$Fraction<-factor(Pacific.AA$Fraction, levels=c("host.Pal", "host.HI", "symb.Pal", "symb.HI",
                             "plank.Pal", "plank.HI", "POM.Pal"))
+
 ```
   
 Run LDA analysis as performed in Fox et al. 
@@ -1750,6 +1755,8 @@ df.SE.pl[is.na(df.SE.pl)] <- 0
 colnames(df.SE.pl)[3]="SE"
 df.mean.pl<-cbind(df.mean.pl, df.SE.pl[3])
 
+
+df.mean.pl$AA<-factor(df.mean.pl$AA, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
 pd <- position_dodge(0.5) #offset for error bars
 
