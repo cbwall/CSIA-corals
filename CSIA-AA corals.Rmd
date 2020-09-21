@@ -20,7 +20,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
 ###############
 # Carbon and Nitrogen Isotopic Analysis of Individual Amino Acids in Montipora capitata
 # Author: C. Wall
-# Collaborators: Brian Popp, Ruth Gates
+# Collaborators: Brian Popp, Ruth Gates, Natalie Wallsgrove
 # Institution: University of Hawai'i at Mānoa
 ###############
 
@@ -39,10 +39,7 @@ Techniques for  Compound Specific Isotope Analysis (CSIA) of individual amino ac
   
 *Trophic amino acids* on the other hand are a group of AA that show significant ^15^N enrichment compared to source-AA, which correspond to trophic steps.This enrichment is quite large and may exceed 8 ‰.  
 
-
-
-<center>
-![](figures/Chikariashi figure.png){ width=70%} </center>
+  
 ### Bulk isotopes  
 Carbon and nitrogen isotope values in plankton, Symbiodiniaceae symbionts and coral host tissues. With linear models testing effect of treatment and fraction 
 ```{r, bulk isotopes, fig.cap="*Figure 1*. Bulk tissue carbon and nitrogen isotope values for corals (host), their endosymbiont Symbiodiniaceae (symbiont), and a pooled plankton sample (plank) at three Light-by-Feeding nutrition treatments. L-NF (Light-Not Fed, autotrophic), L-F (Light-Fed, mixotrophic), Dark-Fed (heterotrophic). Boxplots are n=2, except for plankton (n=1)."}
@@ -1569,6 +1566,7 @@ Run LDA analysis as performed in Fox et al.
 Pacific.EAA.df<- Pacific.AA %>% 
   select(Location, Species, Fraction, Leu, Ile, Phe, Thr, Lys, Val)
 
+write.csv(Pacific.EAA.df, "output/Pacific.EAA.df.csv")
 
 ###### ###### ###### ###### ###### 
 ###### NORMALIZING AAESS DATA BY Sample MEAN  (mean of all AA d13C) - raw individual AAd13C value
