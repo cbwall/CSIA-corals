@@ -13,7 +13,8 @@ output:
     toc_depth: '4'
 ---
 ```{r setup chunk, setup, fig.dim=c(5,5), warning=FALSE, message=FALSE}
-require("knitr")
+
+if (!require('knitr')) install.packages('knitr'); library('knitr')
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
 
 ###############
@@ -23,16 +24,12 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
 # Institution: University of Hawai'i at Mānoa
 ###############
 
-# load packages
-library(devtools)
-#install_github("ggbiplot", "vqv")
-library(ggbiplot)
-require(graphics)
-library(dplyr)
-library(effects)
-library(plyr)
-library(plotrix)
-library("cowplot")
+# Load in packages
+if (!require("pacman")) install.packages("pacman"); library(pacman) # for rapid install if not in library
+
+pacman::p_load(devtools, ellipse, ggbiplot, vqv, patchwork, graphics, plyr, effects, MASS, tidyverse, dplyr, plotrix, vegan, cowplot, caret, reshape)
+
+
 ```
 
 ### Background
@@ -46,9 +43,117 @@ Techniques for  Compound Specific Isotope Analysis (CSIA) of individual amino ac
 
 <center>
 ![](figures/Chikariashi figure.png){ width=70%} </center>
+### Bulk isotopes  
+Carbon and nitrogen isotope values in plankton, Symbiodiniaceae symbionts and coral host tissues. With linear models testing effect of treatment and fraction 
+```{r, bulk isotopes, fig.cap="*Figure 1*. Bulk tissue carbon and nitrogen isotope values for corals (host), their endosymbiont Symbiodiniaceae (symbiont), and a pooled plankton sample (plank) at three Light-by-Feeding nutrition treatments. L-NF (Light-Not Fed, autotrophic), L-F (Light-Fed, mixotrophic), Dark-Fed (heterotrophic). Boxplots are n=2, except for plankton (n=1)."}
+bulk<-read.csv("data/bulkCN.isotopes.csv")
+bulk$Treat.Int<-factor(bulk$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
+bulk$Fraction<-factor(bulk$Fraction, levels=c("host", "symb", "plank"))
+
+bulk.HS<-bulk[!(bulk$Fraction=="plank"),] # plankton removed from fraction
+
+bulk.d15N.means<-aggregate(d15N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.d15N.means
+bulk.d13C.means<-aggregate(d13C~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.d13C.means
+bulk.CN.means<-aggregate(C.N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.CN.means
+
+bulk.means<-cbind(bulk.d15N.means, bulk.d13C.means[3], bulk.CN.means[3])
 
 
-### Carbon and Nitrogen AA
+### fig formatting
+format.fig<-
+  theme(axis.ticks.length=unit(0.25, "cm"), 
+        axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")),
+        axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
+  theme(text = element_text(size=8)) +
+  theme(legend.text=element_text(size=10), legend.key = element_blank()) +
+  theme(panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(),
+      panel.background = element_blank(), 
+      axis.line = element_line(colour = "black",  size=0.5))
+
+
+##### bulk figures
+d13C.m<-aggregate(d13C~Treat.Int, data=bulk, mean, na.rm=TRUE)
+d13C.n<-aggregate(d13C~Treat.Int, data=bulk, length)
+
+# d13C
+d13C.plot<-ggplot(bulk, aes(y=d13C, x=Treat.Int))+
+  geom_boxplot(aes(fill=Fraction)) + 
+  geom_dotplot(aes(fill = Fraction, color = Fraction),
+               binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
+               position = position_dodge(0.75))+
+  ylab(expression(paste(delta^{13}, C, " (\u2030, V-PDB)")))+
+  xlab("Treatment") + theme(legend.title = element_blank()) +
+  format.fig 
+
+anova(lm(d13C ~ Fraction+Treat.Int, data=bulk.HS))
+
+
+# d15N
+d15N.plot<-ggplot(bulk, aes(y=d15N, x=Treat.Int))+
+  geom_boxplot(aes(fill=Fraction)) + 
+  geom_dotplot(aes(fill = Fraction, color = Fraction),
+               binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
+               position = position_dodge(0.75))+
+  ylab(expression(paste(delta^{15}, N, " (\u2030, air)")))+
+  xlab("Treatment") +
+  format.fig + theme(legend.position = "none")
+
+anova(lm(d15N ~ Fraction+Treat.Int, data=bulk.HS))
+
+####
+# C:N
+C.N.plot<-ggplot(bulk, aes(y=C.N, x=Treat.Int), na.rm=T)+
+  geom_boxplot(aes(fill=Fraction)) +
+  geom_dotplot(aes(fill = Fraction, color = Fraction),
+               binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
+               position = position_dodge(0.75))+
+  ylab(expression(paste(C:N)))+
+  xlab("Treatment") +
+  format.fig + theme(legend.position = "none")
+
+anova(lm(C.N ~ Fraction+Treat.Int, data=bulk.HS))
+
+
+####
+# d13H-S
+d13C.HS.plot<-ggplot(bulk.HS, aes(y=d13C.H.S, x=Treat.Int), na.rm=T)+
+  geom_boxplot() + 
+  geom_dotplot(
+               binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
+               position = position_dodge(0.75))+
+  ylab(expression(paste(delta^{13}, C[H-S], " (\u2030)"))) +
+  xlab("Treatment") +
+  format.fig + theme(legend.position = "none")
+
+anova(lm(d13C.H.S ~ Treat.Int, data=bulk.HS))
+
+
+# d15NH-S
+d15N.HS.plot<-ggplot(bulk.HS, aes(y=d15N.H.S, x=Treat.Int), na.rm=T)+
+  geom_boxplot() +
+  geom_dotplot(
+               binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
+               position = position_dodge(0.75))+
+  ylab(expression(paste(delta^{15}, N[H-S], " (\u2030)")))+
+  xlab("Treatment") +
+  format.fig + theme(legend.position = "none")
+
+anova(lm(d15N.H.S ~ Treat.Int, data=bulk.HS))
+
+####
+
+bulk.legend <- get_legend(
+  # create some space to the left of the legend
+  d13C.plot + theme(legend.box.margin = margin(0, 0, 0, 12)))
+
+bulk.figures<-(d13C.plot+theme(legend.position = "none") | d15N.plot | C.N.plot | d13C.HS.plot | d15N.HS.plot |
+                 bulk.legend)
+print(bulk.figures)
+ggsave("figures/Fig 1. bulk isotope.pdf", height=3.5, width=12, encod="MacRoman")
+```
+
+### CSIA Carbon and Nitrogen
 Carbon in amino acids of plankton, Symbiodiniaceae symbionts and coral host tissues.
 ```{r Carbon, results='hide'}
 ######## ######## 
@@ -59,6 +164,7 @@ d13C.dat<-read.csv("data/d13C.CSIA.wide.csv") # wide form carbon data
 
 colnames(d13C.dat)
 d13C.dat$Fraction<-factor(d13C.dat$Fraction, levels=c("host", "symb", "plank"))
+d13C.dat$Treat.Int<-factor(d13C.dat$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
 d13C.dat<-d13C.dat[ , !(names(d13C.dat) %in% c("Norleucine", "Aminoadipic.Acid", "Methionine"))] #remove Norleucine, Methionine, Aminoadipic Acid
 
 
@@ -79,7 +185,7 @@ df.manova.C.abs<-abs(df.manova.C) # change all to absolute values
 
 set.seed(138)
 perman.C<-adonis2(df.manova.C.abs~Fraction*Treat.Int, data=d13C.dat.perm, permutations=1000, 
-                method="bray", sqrt.dist = TRUE)
+                method="euclidean", sqrt.dist = TRUE)
 perman.C
 write.csv(perman.C, "output/perman.C.csv")
 
@@ -92,7 +198,7 @@ df.manova.N<-d15N.dat.perm[, c(11:23)] # remove factor columns
 
 set.seed(138)
 perman.N<-adonis2(df.manova.N~Fraction*Treat.Int, data=d15N.dat.perm, permutations=1000, 
-                method="bray", sqrt.dist = TRUE)
+                method="euclidean", sqrt.dist = TRUE)
 perman.N
 write.csv(perman.N, "output/perman.N.csv")
 ```
@@ -114,11 +220,13 @@ newdat.C<-PC.C$x[,1:4] # 2 PCAs explain 81% of variance
 #plot(PC, type="lines", main="PC.area eigenvalues")
 
 ## PC1 and PC2
+trt.color<-c("lightskyblue", "darkgoldenrod1", "gray70", "mediumorchid")
+
 PC.fig1.C.trt <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
                              groups= PCA.df.C[,1], ellipse = TRUE,
                              circle = FALSE) +
-  scale_color_discrete(name = '') +
-  theme_bw() +
+  scale_color_manual(values=trt.color)+
+  theme_classic() +
   scale_x_continuous(breaks=pretty_breaks(n=5))+
   coord_cartesian(xlim = c(-8, 8), ylim=c(-4, 4))+ 
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
@@ -147,8 +255,8 @@ newdat.N<-PC.N$x[,1:4] # 2 PCAs explain 74% of variance
 PC.fig2.N.trt <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
                    groups= PCA.df.N[,1], ellipse = TRUE,
                    circle = FALSE) +
-  scale_color_discrete(name = '') +
-  theme_bw() +
+  scale_color_manual(values=trt.color)+
+  theme_classic() +
   coord_cartesian(xlim = c(-8, 5), ylim=c(-6, 6)) +
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
   theme(legend.text=element_text(size=15)) +
@@ -164,12 +272,13 @@ print(PC.fig2.N.trt)
 ```{r PCA carbon by fraction, results='hide', message=FALSE}
 ######## ######## ######## ######## 
 ######## ######## ######## ######## by fraction
-
+frac.color<- c("coral", "seagreen3", "mediumorchid")
+  
 PC.fig3.C.frac <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
                    groups= PCA.df.C[,2], ellipse = TRUE,
                    circle = FALSE) +
-  scale_color_discrete(name = '') +
-  theme_bw() +
+  scale_color_manual(values=frac.color)+
+  theme_classic() +
   coord_cartesian(xlim = c(-8, 8), ylim=c(-4, 4)) +
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
   theme(legend.text=element_text(size=15)) +
@@ -188,8 +297,8 @@ print(PC.fig3.C.frac)
 PC.fig4.N.frac <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
                    groups= PCA.df.N[,2], ellipse = TRUE,
                    circle = FALSE) +
-  scale_color_discrete(name = '') +
-  theme_bw() +
+  scale_color_manual(values=frac.color)+
+  theme_classic() +
   coord_cartesian(xlim = c(-8, 5), ylim=c(-6, 6)) + 
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
   theme(legend.text=element_text(size=15)) +
@@ -200,7 +309,461 @@ PC.fig4.N.frac <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1,
 print(PC.fig4.N.frac)
 #ggsave("figures/nitrogen/PCA_d15N.frac.pdf", height=5, width=8, encod="MacRoman")
 ```
+### LDA all AA  
+Break up C and N AA and do LDA for each. Includes all AA in the categories (Non-EAA/EAA) and (Trophic/Source).
   
+```{r, LDA}
+
+# LDA dataframe
+LDA.d13C<-d13C.dat[, c(8,11:23)] # (Just 'Fraction' tested here)
+LDA.df.N<-d15N.dat[, c(7:8,11:23)]
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.C.samples <- LDA.d13C$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.C.data <- LDA.d13C[training.C.samples, ]
+test.C.data <- LDA.d13C[-training.C.samples, ]
+
+#Normalize
+# Estimate preprocessing parameters
+preproc.param <- train.C.data %>% 
+  preProcess(method = c("center", "scale"))
+
+# Transform the data using the estimated parameters
+train.transformed <- preproc.param %>% predict(train.C.data)
+test.transformed <- preproc.param %>% predict(test.C.data)
+
+# Fit the model (Just Fraction tested here)
+model.C.frac <- lda(Fraction~., data = train.transformed)
+
+# Make predictions
+predictions <- model.C.frac %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$Fraction) #0.5 accuracy
+
+
+### INFO ###
+# LDA determines group means and computes, for each individual, the probability of belonging to the different groups. The individual is then affected to the group with the highest probability score.
+
+# Output:
+#Prior probabilities of groups: the proportion of training observations in each group. For example, there are 31% of the training observations in the setosa group
+# Group means: group center of gravity. Shows the mean of each variable in each group.
+# Coefficients of linear discriminants: Shows the linear combination of predictor variables that are used to form the LDA decision rule.
+
+# Make predictions
+predictions <- model.C.frac %>% predict(test.transformed)
+names(predictions)
+
+#The predict() function returns the following elements:
+
+#class: predicted classes of observations.
+#posterior: is a matrix whose columns are the groups, rows are the individuals and values are the posterior probability that the corresponding observation belongs to the groups.
+#x: contains the linear discriminants, described above
+
+
+# Predicted classes
+head(predictions$class, 6)
+# Predicted probabilities of class membership.
+head(predictions$posterior, 6) 
+# Linear discriminants
+head(predictions$x, 3)
+
+LDA.C.data <- cbind(train.transformed, predict(model.C.frac)$x)
+
+mean(predictions$class==test.transformed$Fraction)
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+library(ellipse)
+dat_ell <- data.frame()
+for(g in levels(LDA.C.data$Fraction)){
+dat_ell <- rbind(dat_ell, cbind(as.data.frame(with(LDA.C.data[LDA.C.data$Fraction==g,], ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.C.frac<-ggplot(LDA.C.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  geom_path(data=dat_ell, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+  scale_color_manual(values=frac.color)+
+  coord_cartesian(xlim = c(-4, 14), ylim=c(-4, 4)) + 
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.C.frac)
+
+########### LDA Nitrogen
+
+# LDA dataframe
+LDA.df.N<-d15N.dat[, c(8,11:23)] # (Just 'Fraction' tested here)
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.N.samples <- LDA.df.N$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.N.data <- LDA.df.N[training.N.samples, ]
+test.N.data <- LDA.df.N[-training.N.samples, ]
+
+preproc.N.param <- train.N.data %>% 
+  preProcess(method = c("center", "scale"))
+
+train.N.transformed <- preproc.N.param %>% predict(train.N.data)
+test.N.transformed <- preproc.N.param %>% predict(test.N.data)
+
+# Fit the model (Just Fraction tested here)
+model.N.frac <- lda(Fraction~., data = train.N.transformed)
+
+# Make predictions
+predictions.N <- model.N.frac %>% predict(test.N.transformed)
+
+# Model accuracy
+mean(predictions.N$class==test.N.transformed$Fraction) #0.5 accuracy
+
+# Make predictions
+predictions.N <- model.N.frac %>% predict(test.N.transformed)
+names(predictions.N)
+
+# Predicted classes
+head(predictions.N$class, 6)
+# Predicted probabilities of class membership.
+head(predictions.N$posterior, 6) 
+# Linear discriminants
+head(predictions.N$x, 3)
+
+LDA.N.data <- cbind(train.N.transformed, predict(model.N.frac)$x)
+
+mean(predictions.N$class==test.N.transformed$Fraction)
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+dat_ell.N <- data.frame()
+for(g in levels(LDA.N.data$Fraction)){
+dat_ell.N <- rbind(dat_ell.N, cbind(as.data.frame(with(LDA.N.data[LDA.N.data$Fraction==g,], 
+                                                       ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.N.frac<-ggplot(LDA.N.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  scale_color_manual(values=frac.color) +
+  geom_path(data=dat_ell.N, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+  coord_cartesian(xlim = c(-4, 14), ylim=c(-4, 4)) + 
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.N.frac)
+
+plot_grid(LDA.C.frac, LDA.N.frac)
+``` 
+  
+### LDA Carbon Non-EAA/EAA
+```{r, LDA C NEAA EAA}
+
+# LDA dataframe
+# looking at Non-essential AA and Essential 
+# Non-EAA = Ala, Asp, Gly, Glx, Pro, Ser, Tyr
+# EAA = Ile, Leu, Lys, Phe, Thr, Val
+
+
+########################## 
+########################## Non-EAA C
+
+# looking Non-EAA
+# Non-EAA = Ala, Asp, Gly, Glx, Pro, Ser, Tyr
+                               
+LDA.df.NEAAC<-LDA.d13C %>% 
+  select(Fraction, Alanine, Aspartic.acid, Glycine, Glutamic.acid, Proline, Serine, Tyrosine) 
+# (Just 'Trophc' fractions here)
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.C.NEAA.samples <- LDA.df.NEAAC$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.C.NEAA.data <- LDA.df.NEAAC[training.C.NEAA.samples, ]
+test.C.NEAA.data <- LDA.df.NEAAC[-training.C.NEAA.samples, ]
+
+preproc.C.NEAA.param <- train.C.NEAA.data %>% 
+  preProcess(method = c("center", "scale"))
+
+train.C.NEAA.transformed <- preproc.C.NEAA.param %>% predict(train.C.NEAA.data)
+test.C.NEAA.transformed <- preproc.C.NEAA.param %>% predict(test.C.NEAA.data)
+
+# Fit the model (Just Fraction tested here)
+model.C.NEAA <- lda(Fraction~., data = train.C.NEAA.transformed)
+
+# Make predictions
+predictions.C.NEAA <- model.C.NEAA %>% predict(test.C.NEAA.transformed)
+
+# Model accuracy
+mean(predictions.C.NEAA$class==test.C.NEAA.transformed$Fraction) #0.5 accuracy
+
+# Make predictions
+predictions.C.NEAA <- model.C.NEAA %>% predict(test.C.NEAA.transformed)
+names(predictions.C.NEAA)
+
+# Predicted classes
+head(predictions.C.NEAA$class, 6)
+# Predicted probabilities of class membership.
+head(predictions.C.NEAA$posterior, 6) 
+# Linear discriminants
+head(predictions.C.NEAA$x, 3)
+
+LDA.C.NEAA.data <- cbind(train.C.NEAA.transformed, predict(model.C.NEAA)$x)
+
+mean(predictions.C.NEAA$class==test.C.NEAA.transformed$Fraction)
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+dat_ell.C.NEAA <- data.frame()
+for(g in levels(LDA.C.data$Fraction)){
+dat_ell.C.NEAA <- rbind(dat_ell.C.NEAA, cbind(as.data.frame(with(LDA.C.NEAA.data[LDA.C.NEAA.data$Fraction==g,],
+                                        ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.C.NEAA<-ggplot(LDA.C.NEAA.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  scale_color_manual(values=frac.color)+
+  ggtitle(expression(paste(Non-EAA,~delta^{13}, C[AA], ""))) +
+  coord_cartesian(xlim = c(-10, 15), ylim=c(-5, 5)) + 
+  geom_path(data=dat_ell.C.NEAA, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.C.NEAA)
+
+########## ########## ########## 
+########## EAA 
+
+LDA.df.EAAC<-LDA.d13C %>% 
+  select(Fraction, Isoleucine, Leucine, Lysine, Phenylalanine, Threonine, Valine) 
+# (Just 'Trophc' fractions here)
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.C.EAA.samples <- LDA.df.EAAC$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.C.EAA.data <- LDA.df.EAAC[training.C.EAA.samples, ]
+test.C.EAA.data <- LDA.df.EAAC[-training.C.EAA.samples, ]
+
+preproc.C.EAA.param <- train.C.EAA.data %>% 
+  preProcess(method = c("center", "scale"))
+
+train.C.EAA.transformed <- preproc.C.EAA.param %>% predict(train.C.EAA.data)
+test.C.EAA.transformed <- preproc.C.EAA.param %>% predict(test.C.EAA.data)
+
+# Fit the model (Just Fraction tested here)
+model.C.EAA <- lda(Fraction~., data = train.C.EAA.transformed)
+
+# Make predictions
+predictions.C.EAA <- model.C.EAA %>% predict(test.C.EAA.transformed)
+
+# Model accuracy
+mean(predictions.C.EAA$class==test.C.EAA.transformed$Fraction) #0.5 accuracy
+
+# Make predictions
+predictions.C.EAA <- model.C.EAA %>% predict(test.C.EAA.transformed)
+names(predictions.C.EAA)
+
+# Predicted classes
+head(predictions.C.EAA$class, 6)
+# Predicted probabilities of class membership.
+head(predictions.C.EAA$posterior, 6) 
+# Linear discriminants
+head(predictions.C.EAA$x, 3)
+
+LDA.C.EAA.data <- cbind(train.C.EAA.transformed, predict(model.C.EAA)$x)
+
+mean(predictions.C.EAA$class==test.C.EAA.transformed$Fraction)
+
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+dat_ell.C.EAA <- data.frame()
+for(g in levels(LDA.C.data$Fraction)){
+dat_ell.C.EAA <- rbind(dat_ell.C.EAA, cbind(as.data.frame(with(LDA.C.EAA.data[LDA.C.EAA.data$Fraction==g,], 
+                                                       ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.C.EAA<-ggplot(LDA.C.EAA.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  scale_color_manual(values=frac.color)+
+  ggtitle(expression(paste(EAA,~delta^{13}, C[AA], ""))) +
+  coord_cartesian(xlim = c(-10, 15), ylim=c(-5, 5)) + 
+  geom_path(data=dat_ell.C.EAA, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.C.EAA)
+
+plot_grid(LDA.C.NEAA, LDA.C.EAA)
+```
+
+
+### LDA Nitrogen Trophic/Source
+```{r, LDA N}
+
+# LDA dataframe
+# looking at  Trophic and Source
+# Trophic = Ala, Asp, Glx, Ile, Leu, Val, Pro
+# Source = Gly, Set, Ser, Phe, Thr, Tyr
+
+
+########## Trophic AA
+
+LDA.df.TrN<-LDA.df.N %>% 
+  select(Fraction, Alanine, Aspartic.acid, Glutamic.acid, Isoleucine, Leucine, Valine, Proline) 
+# (Just 'Trophc' fractions here)
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.N.Tr.samples <- LDA.df.TrN$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.N.Tr.data <- LDA.df.TrN[training.N.Tr.samples, ]
+test.N.Tr.data <- LDA.df.TrN[-training.N.Tr.samples, ]
+
+preproc.N.Tr.param <- train.N.Tr.data %>% 
+  preProcess(method = c("center", "scale"))
+
+train.N.Tr.transformed <- preproc.N.Tr.param %>% predict(train.N.Tr.data)
+test.N.Tr.transformed <- preproc.N.Tr.param %>% predict(test.N.Tr.data)
+
+# Fit the model (Just Fraction tested here)
+model.N.Tr <- lda(Fraction~., data = train.N.Tr.transformed)
+
+# Make predictions
+predictions.N.Tr <- model.N.Tr %>% predict(test.N.Tr.transformed)
+
+# Model accuracy
+mean(predictions.N.Tr$class==test.N.Tr.transformed$Fraction) #0.5 accuracy
+
+# Make predictions
+predictions.N.Tr <- model.N.Tr %>% predict(test.N.Tr.transformed)
+names(predictions.N.Tr)
+
+# Predicted classes
+head(predictions.N.Tr$class, 6)
+# Predicted probabilities of class membership.
+head(predictions.N.Tr$posterior, 6) 
+# Linear discriminants
+head(predictions.N.Tr$x, 3)
+
+LDA.N.Tr.data <- cbind(train.N.Tr.transformed, predict(model.N.Tr)$x)
+
+mean(predictions.N.Tr$class==test.N.Tr.transformed$Fraction)
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+dat_ell.N.Tr <- data.frame()
+for(g in levels(LDA.N.data$Fraction)){
+dat_ell.N.Tr <- rbind(dat_ell.N.Tr, cbind(as.data.frame(with(LDA.N.Tr.data[LDA.N.Tr.data$Fraction==g,], 
+                                                       ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.N.Tr<-ggplot(LDA.N.Tr.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  scale_color_manual(values=frac.color) +
+  ggtitle(expression(paste(Trophic,~delta^{15}, N[AA], ""))) +
+  coord_cartesian(xlim = c(-10, 20), ylim=c(-6, 6)) + 
+  geom_path(data=dat_ell.N.Tr, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.N.Tr)
+
+
+#################
+########################## Source AA N
+
+# looking Source
+# Source = Gly, Set, Ser, Phe, Thr, Tyr
+                               
+LDA.df.SrN<-LDA.df.N %>% 
+  select(Fraction, Glycine, Serine, Phenylalanine, Threonine, Tyrosine) 
+# (Just 'Trophc' fractions here)
+
+# Split the data into training (80%) and test set (20%)
+set.seed(123)
+training.N.Sr.samples <- LDA.df.SrN$Fraction %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.N.Sr.data <- LDA.df.SrN[training.N.Sr.samples, ]
+test.N.Sr.data <- LDA.df.SrN[-training.N.Sr.samples, ]
+
+preproc.N.Sr.param <- train.N.Sr.data %>% 
+  preProcess(method = c("center", "scale"))
+
+train.N.Sr.transformed <- preproc.N.Sr.param %>% predict(train.N.Sr.data)
+test.N.Sr.transformed <- preproc.N.Sr.param %>% predict(test.N.Sr.data)
+
+# Fit the model (Just Fraction tested here)
+model.N.Sr <- lda(Fraction~., data = train.N.Sr.transformed)
+
+# Make predictions
+predictions.N.Sr <- model.N.Sr %>% predict(test.N.Sr.transformed)
+
+# Model accuracy
+mean(predictions.N.Sr$class==test.N.Sr.transformed$Fraction) #0.5 accuracy
+
+# Make predictions
+predictions.N.Sr <- model.N.Sr %>% predict(test.N.Sr.transformed)
+names(predictions.N.Sr)
+
+# Predicted classes
+head(predictions.N.Sr$class, 6)
+# Predicted probabilities of class membership.
+head(predictions.N.Sr$posterior, 6) 
+# Linear discriminants
+head(predictions.N.Sr$x, 3)
+
+LDA.N.Sr.data <- cbind(train.N.Sr.transformed, predict(model.N.Sr)$x)
+
+mean(predictions.N.Sr$class==test.N.Sr.transformed$Fraction)
+
+# LDA d13C-AA Fraction
+
+# for ellipses
+dat_ell.N.Sr <- data.frame()
+for(g in levels(LDA.N.data$Fraction)){
+dat_ell.N.Sr <- rbind(dat_ell.N.Sr, cbind(as.data.frame(with(LDA.N.Sr.data[LDA.N.Sr.data$Fraction==g,], 
+                                                       ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))),Fraction=g))
+}
+
+LDA.N.Sr<-ggplot(LDA.N.Sr.data, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction))+
+  scale_color_manual(values=frac.color)+
+  ggtitle(expression(paste(Source,~delta^{15}, N[AA], ""))) +
+  coord_cartesian(xlim = c(-10, 20), ylim=c(-6, 6)) + 
+  geom_path(data=dat_ell.N.Sr, aes(x=x,y=y,color=Fraction),size=0.5,linetype=2)  +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background=element_blank())
+
+print(LDA.N.Sr)
+
+plot_grid(LDA.N.Tr, LDA.N.Sr)
+```
+
+
 ### Carbon AA
   
 #### Models  
@@ -262,20 +825,18 @@ d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Methionine"),]
 d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Norleucine"),]
 d13C.dat.long<-d13C.dat.long[!(d13C.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d13C.dat.long$AA.short<-mapvalues(d13C.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Gly", "Glu", "Pro", "Ser", "Tyr", "Ile", "Leu", "Lys", "Phe", "Thr", "Val"))
+d13C.dat.long$AA.short<-factor(d13C.dat.long$AA.short, levels=c("Ala","Asp", "Gly", "Glx", "Pro", "Ser", "Tyr", "Ile", "Leu", "Lys", "Phe", "Thr", "Val"))
+
+d13C.dat.long$Treat.Int<-factor(d13C.dat.long$Treat.Int, levels=c("L-NF", "L-F", "D-F", "Plank"))
 
 
 # looking at average essential and non-essential AA
 d13C.dat.long$AA.cat<-ifelse(d13C.dat.long$AA.short=="Ala" |d13C.dat.long$AA.short=="Asp" |
-                               d13C.dat.long$AA.short=="Gly" | d13C.dat.long$AA.short=="Glu" |
+                               d13C.dat.long$AA.short=="Gly" | d13C.dat.long$AA.short=="Glx" |
                                d13C.dat.long$AA.short=="Pro" | d13C.dat.long$AA.short=="Ser" | 
                                d13C.dat.long$AA.short=="Tyr", "Non-EAA", "EAA")
-
-mod<-lm(d13C.value~AA.short+Fraction+Treat.Int, data=d13C.dat.long)
-print(anova(mod))
-#plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
 
 dfC<-d13C.dat.long
 ```
@@ -304,15 +865,21 @@ df.n<-aggregate(d13C.value~AA.short+Fraction+Treat.Int, data=dfC, length)
 df.SD<-aggregate(d13C.value~AA.short+Fraction+Treat.Int, data=dfC, sd, na.rm=TRUE)
 colnames(df.SD)[4]="SD"
 df.mean<-cbind(df.mean, df.SD[4])
+
+# replace NA for plankton SD as 0
+df.mean$SD[is.na(df.mean$SD)] <- 0
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
+df.mean$Treat.Int<-factor(df.mean$Treat.Int, levels=c("L-NF", "L-F", "D-F", "Plank"))
 
 
 ## d13C just by fraction
 df.mean.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, mean, na.rm=TRUE)
 df.n.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, length)
-df.SD.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, sd, na.rm=TRUE)
-colnames(df.SD.frac)[3]="SD"
-df.mean.frac<-cbind(df.mean.frac, df.SD.frac[3])
+df.SE.frac<-aggregate(d13C.value~AA.short+Fraction, data=dfC, std.error, na.rm=TRUE)
+colnames(df.SE.frac)[3]="SE"
+
+df.SE.frac[is.na(df.SE.frac)] <- 0
+df.mean.frac<-cbind(df.mean.frac, df.SE.frac[3])
 df.mean.frac$Fraction<-factor(df.mean.frac$Fraction, levels=c("host", "symb", "plank"))
 write.csv(df.mean.frac, "output/d13C.mean.frac.csv")
 
@@ -348,7 +915,7 @@ d13C.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
   annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+  scale_color_manual(values=c(frac.color)) +
   ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
   Fig.formatting
 print(d13C.CSIA_frac.trt)
@@ -362,23 +929,25 @@ print(d13C.CSIA_frac.trt)
 # all d13C amino acids
 
 df.mean2<-aggregate(d13C.value~AA.short+Treat.Int, data=dfC, mean, na.rm=TRUE)
-df.SD2<-aggregate(d13C.value~AA.short+Treat.Int, data=dfC, na.rm=TRUE, sd)
-df.SD2[is.na(df.SD2)] <- 0
-colnames(df.SD2)[3]="SD"
-df.mean2<-cbind(df.mean2, df.SD2[3])
+df.SE2<-aggregate(d13C.value~AA.short+Treat.Int, data=dfC, na.rm=TRUE, std.error)
+df.n2<-aggregate(d13C.value~AA.short+Treat.Int, data=dfC, length)
+df.SE2[is.na(df.SE2)] <- 0
+colnames(df.SE2)[3]="SE"
+df.mean2<-cbind(df.mean2, df.SE2[3])
 
 pd <- position_dodge(0.5) #offset for error bars
 
  d13C.CSIA_Trt.alone<-ggplot(df.mean2, aes(x=AA.short, y=d13C.value, group=Treat.Int)) +
-  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, color=Treat.Int), size=.5, width=0, position=pd) +
-  geom_point(aes(color=Treat.Int), size=2, position=pd) +
+  geom_errorbar(aes(ymin=d13C.value-SE, ymax=d13C.value+SE, color=Treat.Int), size=.5, width=0, position=pd) +
+  geom_point(aes(color=Treat.Int, shape=Treat.Int), size=2, position=pd) +
+  scale_shape_manual(values=c(19,19,19,3))+
+  scale_color_manual(values=trt.color)+
   ggtitle(expression(paste(delta^{13}, C[AA], " by treatment"))) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Nonessential-AA", x=4, y=0, color="gray40") +
   annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") +
-  scale_color_manual(values=c("gray40", "darkgoldenrod1", "coral", "skyblue2")) +
   ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
   Fig.formatting
 print(d13C.CSIA_Trt.alone)
@@ -392,19 +961,20 @@ print(d13C.CSIA_Trt.alone)
 
 
 df.mean3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, mean, na.rm=TRUE)
-df.SD3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, na.rm=TRUE, sd)
-df.SD3[is.na(df.SD3)] <- 0
-colnames(df.SD3)[3]="SD"
-df.mean3<-cbind(df.mean3, df.SD3[3])
+df.SE3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, na.rm=TRUE, std.error)
+df.n3<-aggregate(d13C.value~AA.short+Fraction, data=dfC, length)
+df.SE3[is.na(df.SE3)] <- 0
+colnames(df.SE3)[3]="SE"
+df.mean3<-cbind(df.mean3, df.SE3[3])
 df.mean3$Fraction<-factor(df.mean3$Fraction, levels=c("host", "symb", "plank"))
 
 
 pd <- position_dodge(0.5) #offset for error bars
 
 d13C.CSIA_Fraction<- ggplot(df.mean3, aes(x=AA.short, y=d13C.value)) +
-  geom_errorbar(aes(ymin=d13C.value-SD, ymax=d13C.value+SD, color=Fraction), 
+  geom_errorbar(aes(ymin=d13C.value-SE, ymax=d13C.value+SE, color=Fraction), 
                 size=.5, width=0, position=pd) +
-  geom_point(size=2, pch=19,  position=pd, aes(color=Fraction)) +
+  geom_point(size=2,  position=pd, aes(color=Fraction, shape=Fraction)) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Nonessential-AA", x=4, y=0, color="gray40") +
   annotate(geom="text", label="Essential-AA", x=10, y=0, color="gray40") +
@@ -412,7 +982,8 @@ d13C.CSIA_Fraction<- ggplot(df.mean3, aes(x=AA.short, y=d13C.value)) +
   coord_cartesian(ylim=c(-35, 0)) + 
   xlab("Amino Acids") + 
   ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+  scale_color_manual(values=frac.color) +
+  scale_shape_manual(values=c(19,19,3))+
   Fig.formatting
 print(d13C.CSIA_Fraction)
 #ggsave("figures/carbon/d13C.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
@@ -455,21 +1026,19 @@ d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Methionine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Norleucine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
 # looking at average Trophic and Source
-d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glu" | 
+d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glx" | 
                                d15N.dat.long$AA.short=="Ala" | d15N.dat.long$AA.short=="Ile" | 
                                d15N.dat.long$AA.short=="Leu" | d15N.dat.long$AA.short=="Val" | 
                                d15N.dat.long$AA.short=="Pro", "Troph", "Source")
 
-dfN<-d15N.dat.long
-mod<-lm(d15N.value~AA.short+Treat.Int*Fraction, data=d15N.dat.long)
-#plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
+d15N.dat.long$Treat.Int<-factor(d15N.dat.long$Treat.Int, levels=c("L-NF", "L-F", "D-F", "Plank"))
 
-#dfN<-d15N.dat.long[!(d15N.dat.long$AA.short=="Thr"), ] # not good source, remove here
+dfN<-d15N.dat.long
 ```
 
   
@@ -480,12 +1049,12 @@ pd <- position_dodge(0.5) #offset for error bars
 
 df.mean<-aggregate(d15N.value~AA.short+Fraction, data=dfN, mean, na.rm=TRUE)
 df.n<-aggregate(d15N.value~AA.short+Fraction, data=dfN, length)
-df.SD<-aggregate(d15N.value~AA.short+Fraction, data=dfN, sd, na.rm=TRUE)
-df.SD[is.na(df.SD)] <- 0
-colnames(df.SD)[3]="SD"
-df.mean<-cbind(df.mean, df.SD[3])
+df.SE<-aggregate(d15N.value~AA.short+Fraction, data=dfN, std.error, na.rm=TRUE)
+df.SE[is.na(df.SE)] <- 0
+colnames(df.SE)[3]="SE"
+df.mean<-cbind(df.mean, df.SE[3])
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
-write.csv(df.mean, "output/d15N.frac.meansd.csv")
+write.csv(df.mean, "output/d15N.frac.meanse.csv")
 
 Fig.formatting<-(theme_classic()) +
   theme(text=element_text(size=10),
@@ -507,17 +1076,18 @@ Fig.formatting<-(theme_classic()) +
 ######
 # all AA pooled by fraction
 d15N.CSIA_Fraction<-ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
-  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, color=Fraction), 
+  geom_errorbar(aes(ymin=d15N.value-SE, ymax=d15N.value+SE, color=Fraction), 
                 size=.5, width=0, position=pd) +
-  geom_point(size=2, pch=19,  position=pd, aes(color=Fraction)) +
+  geom_point(size=2, position=pd, aes(color=Fraction, shape=Fraction)) +
+  scale_shape_manual(values=c(19,19,3))+
   ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction"))) +
-  coord_cartesian(ylim=c(15, -5)) +
+  coord_cartesian(ylim=c(-5, 15)) +
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10, y=15, color="gray40") +
   xlab("Amino Acids") + 
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+  scale_color_manual(values=frac.color)+
   Fig.formatting
 print(d15N.CSIA_Fraction)
 #ggsave("figures/nitrogen/d15N.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
@@ -530,20 +1100,23 @@ df.mean<-aggregate(d15N.value~AA.short+Fraction+Treat.Int, data=dfN, mean, na.rm
 df.n<-aggregate(d15N.value~AA.short+Fraction+Treat.Int, data=dfN, length)
 df.SD<-aggregate(d15N.value~AA.short+Fraction+Treat.Int, data=dfN, sd, na.rm=TRUE)
 colnames(df.SD)[4]="SD"
+
+df.SD[is.na(df.SD)] <- 0
 df.mean<-cbind(df.mean, df.SD[4])
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
+df.mean$Treat.Int<-factor(df.mean$Treat.Int, levels=c("L-NF", "L-F", "D-F", "Plank"))
 
 d15N.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
   geom_point(size=2, aes(shape=Treat.Int, color=Fraction, group=Treat.Int), position=pd) +
   geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, group=Treat.Int, color=Fraction), 
                 size=.5, width=0, position=pd) +
   ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, treatment"))) +
-  coord_cartesian(ylim=c(15, -5)) + 
+  coord_cartesian(ylim=c(-5, 15)) + 
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10, y=15, color="gray40") +
   xlab("Amino Acids") +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+  scale_color_manual(values=frac.color) +
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
 print(d15N.CSIA_frac.trt)
@@ -556,42 +1129,50 @@ print(d15N.CSIA_frac.trt)
 # all d15N amino acids
 
 df.mean2<-aggregate(d15N.value~AA.short+Treat.Int, data=dfN, mean, na.rm=TRUE)
-df.SD2<-aggregate(d15N.value~AA.short+Treat.Int, data=dfN, na.rm=TRUE, sd)
-df.SD2[is.na(df.SD2)] <- 0
-colnames(df.SD2)[3]="SD"
-df.mean2<-cbind(df.mean2, df.SD2[3])
+df.n2<-aggregate(d15N.value~AA.short+Treat.Int, data=dfN, length)
+df.SE2<-aggregate(d15N.value~AA.short+Treat.Int, data=dfN, na.rm=TRUE, std.error)
+df.SE2[is.na(df.SE2)] <- 0
+colnames(df.SE2)[3]="SE"
+df.mean2<-cbind(df.mean2, df.SE2[3])
 
 d15N.CSIA_Trt.alone<-ggplot(df.mean2, aes(x=AA.short, y=d15N.value, group=Treat.Int)) +
-  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, color=Treat.Int), size=.5, width=0, position=pd) +
-  geom_point(aes(color=Treat.Int), size=2, position=pd) +
+  geom_errorbar(aes(ymin=d15N.value-SE, ymax=d15N.value+SE, color=Treat.Int), size=.5, width=0, position=pd) +
+  geom_point(aes(color=Treat.Int, shape=Treat.Int), size=2, position=pd) +
   ggtitle(expression(paste(delta^{15}, N[AA], " by treatment"))) +
-  coord_cartesian(ylim=c(15, -5)) + 
+  coord_cartesian(ylim=c(-5, 15)) + 
   geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
   annotate(geom="text", label="Trophic-AA", x=4, y=15, color="gray40") +
   annotate(geom="text", label="Source-AA", x=10, y=15, color="gray40") +
   xlab("Amino Acids") +
-  scale_color_manual(values=c("gray40", "darkgoldenrod1", "coral", "skyblue2")) +
+  scale_color_manual(values=trt.color) +
+  scale_shape_manual(values=c(19,19,19,3))+
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
 print(d15N.CSIA_Trt.alone)
 #ggsave("figures/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
 ```
   
-- all source and trophic AA, showing d15N.CSIA_TrSo **supplement**
-```{r, results='hide'}
+
+```{r, results='hide', eval=FALSE}
+# all source and trophic AA, showing d15N.CSIA_TrSo **supplement**
+  
+  
 ##################
 # all source and trophic) AA
 AA.means<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, mean, na.rm=TRUE)
-AA.sd<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, sd, na.rm=TRUE)
-colnames(AA.sd)[4]="SD"
-AA.means<-cbind(AA.means, AA.sd[4])
+AA.n<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, length)
+AA.se<-aggregate(d15N.value~AA.cat+Treat.Int+Fraction, data=dfN, std.error, na.rm=TRUE)
+colnames(AA.se)[4]="SE"
+AA.means<-cbind(AA.means, AA.se[4])
 AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
+AA.means$Treat.Int<-factor(AA.means$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
 
 ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, shape=AA.cat, color=Fraction)) +
-  geom_errorbar(aes(ymin=d15N.value-SD, ymax=d15N.value+SD, shape=AA.cat, color=Fraction), size=.5, width=0, position=pd) +
+  geom_errorbar(aes(ymin=d15N.value-SE, ymax=d15N.value+SE, shape=AA.cat, color=Fraction), 
+                size=.5, width=0, position=pd) +
   geom_point(aes(shape=AA.cat, color=Fraction), size=3, position=pd) +
   ggtitle(expression(paste(delta^{15}, N[AA], " by biological fraction, Tr/So-AA"))) +
-  coord_cartesian(ylim=c(12, 0)) + 
+  coord_cartesian(ylim=c(0, 12)) + 
   scale_x_discrete(name ="Treatments", 
                    labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
   scale_color_manual(values=c("coral", "springgreen3",  "skyblue3")) +
@@ -602,51 +1183,60 @@ ggplot(AA.means, aes(x=Treat.Int, y=d15N.value, shape=AA.cat, color=Fraction)) +
 
   
 ##### Trophic position and proxy  
-Trophic position using trophic AA gultamic acid (Glu) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
+Trophic position using trophic AA gultamic acid (Glx) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
   
 $Trophic~position~(TP){_C}{_S}{_I}{_A}= [(δ{^1}{^5}N{_T}{_r}{_p}~-~δ{^1}{^5}N{_S}{_r}{_c})-B/~TDF{_A}{_A} +1$  
   
-- Trophic Position, showing TP.glu.phe
+- Trophic Position, showing TP.glx.phe
 ```{r, results='hide'}
 ###
 # scatter of glutamic.acid vs. phenylalanine
  
        
 ### ### ### 
-### ### ### trophic position using trophic (Glu) and source (Phe) AA, Chikaraishi et al. 2009
+### ### ### trophic position using trophic (Glx) and source (Phe) AA, Chikaraishi et al. 2009
 
 d15N.dat # dataframe here
-# glu = trophic AA (changing with food,  show enrichment realtive to source
+# glx = trophic AA (changing with food,  show enrichment realtive to source
 # phe = source AA (showlittle change with increasing trophic position, reflect d15N baseline)
 # beta = 3.4 (difference in d15N values among trophic and source AAs in primary producers, @ TP=1)
 # TDFAA = trophic discrimination factor: mean 15N enrichment of >=1 trophic vs. source AA per trophic level
  
 d15N.dat<-d15N.dat %>% mutate(TP = ((Glutamic.acid - Phenylalanine - 3.4)/7.6) +1)
 
+# run a model
+TP.df<-d15N.dat
+TP.df<-TP.df[!(TP.df$Fraction=="plank"),] # remove plankton
+anova(lm(TP~Fraction+Treat.Int, data=TP.df)) # no difference
+
+
 df.mean<-aggregate(TP~Treat.Int+Fraction, data=d15N.dat, mean, na.rm=TRUE)
+df.n<-aggregate(TP~Treat.Int+Fraction, data=d15N.dat, length)
 df.SD<-aggregate(TP~Treat.Int+Fraction, data=d15N.dat, sd, na.rm=TRUE)
 colnames(df.SD)[3]="SD"
 df.mean<-cbind(df.mean, df.SD[3])
 df.mean$Fraction<-factor(df.mean$Fraction, levels=c("host", "symb", "plank"))
+df.mean$Treat.Int<-factor(df.mean$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
 
 TP<-ggplot(df.mean, aes(x=Treat.Int, y=TP)) +
   geom_errorbar(aes(ymin=TP-SD, ymax=TP+SD, color=Fraction), 
                 size=.5, width=0, position=pd) +
-  geom_point(size=2, pch=19,  position=pd, aes(color=Fraction)) +
+  geom_point(size=2,  position=pd, aes(color=Fraction, shape=Fraction)) +
   ggtitle("Chikaraishi trophic position") +
-  coord_cartesian(ylim=c(3, 0)) +
+  coord_cartesian(ylim=c(0, 3)) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
-  ylab(expression(paste("TP "~delta^{15}, N[Glu-Phe], " (\u2030, Air)"))) +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed", "Plankton")) +
+  ylab(expression(paste("TP "~delta^{15}, N[Glx-Phe], " (\u2030, Air)"))) +
+  scale_shape_manual(values=c(19,19,3))+
+  scale_color_manual(values=frac.color) +
   Fig.formatting
-print(TP)
-#ggsave("figures/nitrogen/TP.glu.phe.pdf", height=5, width=8, encod="MacRoman")
+#print(TP)
+#ggsave("figures/nitrogen/TP.glx.phe.pdf", height=5, width=8, encod="MacRoman")
 ```
   
   
 ##### Sum V
-Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glu, Ile, Leu, and Pro.  
+Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glx, Ile, Leu, and Pro.  
 
 - showing d15N.sumV.CSIA **move to supplement**
 ```{r, results='hide', warning=FALSE}
@@ -661,44 +1251,52 @@ d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Methionine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Norleucine"),]
 d15N.dat.long<-d15N.dat.long[!(d15N.dat.long$Amino.acid=="Aminoadipic Acid"),] # remove unwanted data
 
-d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glu", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
+d15N.dat.long$AA.short<-mapvalues(d15N.dat.long$Amino.acid, from =c("Alanine", "Aspartic acid", "Glutamic acid", "Glycine", "Isoleucine", "Leucine", "Lysine", "Phenylalanine", "Proline", "Serine", "Threonine", "Tyrosine", "Valine"), to = c("Ala", "Asp", "Glx", "Gly", "Ile", "Leu", "Lys", "Phe", "Pro", "Ser", "Thr", "Tyr", "Val"))
 
-d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glu", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+d15N.dat.long$AA.short<-factor(d15N.dat.long$AA.short, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
 
 # looking at average Trophic and Source
-d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glu" | 
+d15N.dat.long$AA.cat<-ifelse(d15N.dat.long$AA.short=="Asp" | d15N.dat.long$AA.short=="Glx" | 
                                d15N.dat.long$AA.short=="Ala" | d15N.dat.long$AA.short=="Ile" | 
                                d15N.dat.long$AA.short=="Leu" | d15N.dat.long$AA.short=="Val" | 
                                d15N.dat.long$AA.short=="Pro", "Troph", "Source")
 
-dfN<-d15N.dat.long
-mod<-lm(d15N.value~AA.short+Treat.Int*Fraction, data=d15N.dat.long)
-#plot(allEffects(mod), par.strip.text=list(cex=0.7), par.settings=list(axis.text=list(cex=0.7)))
+d15N.dat.long$Treat.Int<-factor(d15N.dat.long$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
 
-#dfN<-d15N.dat.long[!(d15N.dat.long$AA.short=="Thr"), ] # not good source, remove here
+dfN<-d15N.dat.long
 
 
 ###########################
 ###########################
 ###########################
 # dfN is dataframe
-sV.df<-d15N.dat.long
+sV.df<-dfN[!(dfN$AA.short=="Thr"), ] # not good source, remove here
 
 # make dataframe for AA, that with su deviance = sum-V
-sV.df<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glu" | sV.df$AA.short=="Asp" | 
+sV.df<-sV.df[c(sV.df$AA.short=="Ala" | sV.df$AA.short=="Glx" | sV.df$AA.short=="Asp" | 
                   sV.df$AA.short=="Ile" | sV.df$AA.short=="Leu" | sV.df$AA.short=="Pro"),]
 
 #write.csv(sV.df, "sumV.csv")
 
 sumVdf<-read.csv("data/sumV.csv")
 sumVdf$Fraction<-factor(sumVdf$Fraction, levels=c("host", "symb", "plank"))
+sumVdf$Treat.Int<-factor(sumVdf$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
+
+
+######## model
+sumVdf.mod<-sumVdf[!(sumVdf$Fraction=="plank"),] # remove plankton
+anova(lm(sumV~Fraction + Treat.Int, data=sumVdf.mod)) # no difference
+######## 
+
 
 sumVdf.mean<-aggregate(sumV~AA.short+AA.cat+Fraction+Treat.Int, data=sumVdf, mean, na.rm=TRUE)
+sumVdf.n<-aggregate(sumV~AA.short+AA.cat+Fraction+Treat.Int, data=sumVdf, length)
 sumVdf.sd<-aggregate(sumV~AA.short+AA.cat+Fraction+Treat.Int, data=sumVdf, sd, na.rm=TRUE)
 sumVdf<-cbind(sumVdf.mean, sumVdf.sd[5])
 colnames(sumVdf)[5]<-"mean.sumV"
 colnames(sumVdf)[6]="SD"
 sumVdf[is.na(sumVdf)] <- 0
+sumVdf$Treat.Int<- factor(sumVdf$Treat.Int, levels=c("L-NF", "L-F", "D-F"))
 
 pd <- position_dodge(0.7) #offset for error bars and columns
 
@@ -708,12 +1306,12 @@ sumV<-ggplot(sumVdf, aes(x=Treat.Int, y=mean.sumV)) +
                 size=.5, width=0, position=pd) +
   coord_cartesian(ylim=c(0, 3))+ 
   ggtitle(expression(paste("Sum-V ", delta^{15}, N[AA]))) +
-  scale_color_manual(values=c("coral", "springgreen3", "skyblue3")) +
+  scale_color_manual(values=frac.color) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed", "Plankton")) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed", "Plankton")) +
   ylab(expression(paste(delta^{15}, N[Sum-V], " (\u2030, Air)"))) +
   Fig.formatting
-print(sumV)
+#print(sumV)
 #ggsave("figures/nitrogen/d15N.sumV.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
 
@@ -722,12 +1320,13 @@ print(sumV)
 These are the weighted means for trophic and source AA following [Bradley et al. 2015](https://aslopubs.onlinelibrary.wiley.com/doi/abs/10.1002/lom3.10041). Weighted mean AA δ^15^N values.  
   
 - weighted means, showing wt.mean.d15N.CSIA **supplement**
-```{r, results='hide', warning=FALSE}
+```{r, results='hide', warning=FALSE, fig.cap="*Figure S4*. δ15NAA weighted means for trophic and source amino acids according to coral tissue fractions (host, symbiont) and experimental nutrition-treatments. Values are mean ± SD (n=2)."}
 ###########################
 ##################
 #########
 
 df.mean<-aggregate(d15N.value~AA.short+AA.cat+Fraction+Treat.Int, data=dfN, mean, na.rm=TRUE)
+df.n<-aggregate(d15N.value~AA.short+AA.cat+Fraction+Treat.Int, data=dfN, length)
 df.SD<-aggregate(d15N.value~AA.short+AA.cat+Fraction+Treat.Int, data=dfN, sd, na.rm=TRUE)
 colnames(df.SD)[5]="SD"
 df.mean<-cbind(df.mean, df.SD[5])
@@ -742,6 +1341,12 @@ wt.mean<-read.csv("data/wt.means.d15N.csv")
 wt.mean.df<-aggregate(wt.mean~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE)
 SD<-aggregate(wt.SD~AA.cat+Fraction+Treat.Int, data=wt.mean, mean, na.rm=TRUE); colnames(SD)[4]<-"wt.SD"
 wt.mean.df<-cbind(wt.mean.df, SD[4])
+wt.mean.df$Treat.Int<- factor(wt.mean.df$Treat.Int, levels=c("L-NF", "L-F", "D-F"))
+
+######## model
+wt.mean.mod<-wt.mean[!(wt.mean$Fraction=="plank"),]
+anova(lm(wt.mean~Fraction + Treat.Int, data=wt.mean.mod)) # no difference
+######## 
 
 
 pd <- position_dodge(0.5) #offset for error bars
@@ -749,30 +1354,40 @@ ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
   geom_point(aes(color=Fraction, shape=AA.cat), size=3, position=pd) +
   geom_errorbar(aes(ymin=wt.mean-wt.SD, ymax=wt.mean+wt.SD, color=Fraction, shape=AA.cat), 
                 size=.5, width=0, position=pd) +
-  coord_cartesian(ylim=c(12, 0))+ 
+  coord_cartesian(ylim=c(0, 12))+ 
   ggtitle(expression(paste("Weighted Mean ", delta^{15}, N[AA]))) +
   scale_color_manual(values=c("coral", "springgreen3")) +
   scale_x_discrete(name ="Treatments", 
-                   labels=c("Dark\nFed", "Light\nFed", "Light\nNot Fed")) +
+                   labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed")) +
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
-ggsave("figures/wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/Fig S4.wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
   
   
 #### COMBINED FIGURES
 
-**Figure 1-- PCA.combined**
-```{r, fig.dim=c(8,8), results='hide'}
+**Figure 2-- PCA.combined**
+```{r, fig.dim=c(8,8), results='hide', fig.cap="*Figure 2*. Principal component analysis of carbon (left) and nitrogen (right) isotope values of individual amino acids in corals, Symbiodiniaceae, and a pooled plankton sample in relation to tissue fraction (top) and treatments (bottom). Ellipses represent 90% standard deviation with arrows for individual amino acids being significant (p<0.05) correlation vectors."}
 #### compile the 4 PCA ###
 library("cowplot")
 plot_grid(PC.fig3.C.frac, PC.fig4.N.frac, PC.fig1.C.trt, PC.fig2.N.trt, ncol = 2)
-ggsave("figures/Fig 1.PCAs.pdf", height=8, width=11, encod="MacRoman")
+ggsave("figures/Fig 2.PCAs.pdf", height=8, width=11, encod="MacRoman")
+
 ######
 ```
   
-**Figure 2-- AA.frac.trt combined**
-```{r, AA.frac.trt, results='hide', fig.dim=c(9,5)}
+**Figure xx-- LDA.combined**
+```{r, fig.dim=c(8,8), results='hide'}
+#### compile the 4 LDA ###
+plot_grid(LDA.C.NEAA, LDA.N.Tr, LDA.C.EAA, LDA.N.Sr, ncol = 2)
+ggsave("figures/Fig x.LDAs.pdf", height=6, width=7, encod="MacRoman")
+
+######
+```
+  
+**Figure 3-- AA.frac-by-treatment combined**
+```{r, AA.frac.trt, results='hide', fig.dim=c(9,5), fig.cap="*Figure 3*. (a) Carbon and (b) nitrogen isotope analysis of individual amino acids in coral (host), symbiont algae (symb), and a pooled plankton sample (plank) and in host and symbiont tissues in response to nutrition treatment: Dark-Fed (D-F), Light-Fed (L-F), and Light-Not Fed (L-NF). Values are mean ± SD (n=2), except for the plankton sample (n=1)."}
 leg1 <- get_legend(
   # create some space to the left of the legend
   d13C.CSIA_frac.trt + theme(legend.box.margin = margin(0, 0, 0, 12)))
@@ -793,12 +1408,13 @@ AA.frac.trt<- plot_grid(d13C.CSIA_frac.trt + ggtitle("")+
                        annotate(geom="text", size=3, label="(b)", x=1, y=15, color="black"),
                        ncol=2,nrow=1)
 plot_grid(AA.frac.trt, leg1, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
-dev.copy(pdf, "figures/Fig 2.AA.frac.trt.pdf", width = 10, height = 5, encod="MacRoman")
+dev.copy(pdf, "figures/Fig 3.AA.frac.trt.pdf", width = 10, height = 5, encod="MacRoman")
+dev.off()
 ```  
  
  
-**Supplemental figure-- AA.trt combined**
-```{r, AA.trt, results='hide', fig.dim=c(9,5)}
+**Supplemental Figure S1-- AA.trt plot**
+```{r, AA.trt, results='hide', fig.dim=c(9,5), fig.cap="*Figure S1*. (a) Carbon and (b) nitrogen isotope analysis of individual amino acids in coral (host), symbiont algae (symb), and a pooled plankton sample (plank). Values are mean ± SD (n=2), except for the plankton sample (n=1)."}
 leg2 <- get_legend(
   # create some space to the left of the legend
 d13C.CSIA_Trt.alone + theme(legend.box.margin = margin(0, 0, 0, 12)))
@@ -820,10 +1436,11 @@ AA.trt<- plot_grid(d13C.CSIA_Trt.alone + ggtitle("")+
                        ncol=2,nrow=1)
 plot_grid(AA.trt, leg2, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
 dev.copy(pdf, "figures/Fig S1.AA.trt.pdf", width = 10, height = 5, encod="MacRoman")
+dev.off()
 ```  
   
-**Supplemental figure-- AA.frac combined**
-```{r, AA.frac, results='hide', fig.dim=c(9,5)}
+**Supplemental Figure S2-- AA.frac combined**
+```{r, AA.frac, results='hide', fig.dim=c(9,5), fig.cap="*Figure S2*. (a) Carbon and (b) nitrogen isotope analysis of individual amino acids in coral (host), symbiont algae (symb), and a pooled plankton sample (plank). Values are mean ± SE (n=6), except for the plankton sample (n=1)."}
 leg3 <- get_legend(
   # create some space to the left of the legend
 d13C.CSIA_Fraction + theme(legend.box.margin = margin(0, 0, 0, 12)))
@@ -845,12 +1462,13 @@ AA.trt<- plot_grid(d13C.CSIA_Fraction + ggtitle("")+
                        ncol=2,nrow=1)
 plot_grid(AA.trt, leg3, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
 dev.copy(pdf, "figures/Fig S2.AA.frac.pdf", width = 10, height = 5, encod="MacRoman")
+dev.off()
 ```  
   
   
   
-**Supplemental figure-- TP and Sum V combined**
-```{r, TP and Sum V, results='hide', fig.dim=c(7,5)}
+**Supplemental figure S3-- TP and Sum V combined**
+```{r, TP and Sum V, results='hide', fig.dim=c(7,5), fig.cap="*Figure S3*. (a) Trophic position and (b) sum-V calculations for nitrogen isotope analysis of individual amino acids in coral (host) and symbiont algae (symb) in response to nutrition treatment and in relation to a pooled plankton sample (plank). Values are mean ± SD (n=2), except for the plankton sample (n=1)."}
 leg4 <- get_legend(
   # create some space to the left of the legend
   TP + theme(legend.box.margin = margin(0, 0, 0, 12)))
@@ -872,6 +1490,323 @@ TP.sumV.plots<- plot_grid(TP + ggtitle("")+
                        ncol=2,nrow=1)
 plot_grid(TP.sumV.plots, leg4, rel_widths = c(6, 1)) # legend  1/3 size as first obj.
 dev.copy(pdf, "figures/Fig S3.TP.sumV.pdf", width = 7, height = 5, encod="MacRoman")
+dev.off()
 ```  
   
+#### LDA for normalized Pacific data  
+Mean-normalized data is important for comparing across species, times, or locations. This is accomplished by taking the across sample mean for the amino acid (AA) of choice, then subtracting the raw AA value from the mean. We did this for the essential AA (EAA) of carbon: Leucine, Isoleucine, Phenylalanine, Threonine, Lysine, Valine.  
+  
+Uses linear discrimination analyses (LDA) of the mean-normalized EAA in symbiont and plankton+POM from Oahu (this study) and those reported in Fox et al (2019, FuncEcol) to act as training data for sources of autotrophic vs. heterotrophic nutrition. The training data is then applied to the coral species in the two studies (*M. capitata* and *Pocillopora meandrina*) to assign coral IDs, asking if the corals align with either autotrophic or heterotrophic groups.  
+  
+Combine the data from Oahu and Palmyra
+### d13C-AA data from Fox et al
+```{r Fox data}
+##### Palmyra data
+Fox.data<-read.csv("data/Palmyra_AAd13C.csv")
 
+# rename a column
+names(Fox.data)[names(Fox.data)=="group"] <- "Fraction"
+
+# rename a level
+Fox.data$Fraction<-  revalue(Fox.data$Fraction, c("Animal"="host.Pal", "Zoox"="symb.Pal", 
+                                "Plankton"="plank.Pal", "POM"="POM.Pal"))
+       
+# select columns
+Fox.data<- Fox.data %>%
+  select(Location, Species, Fraction, Ala13C, Gly13C, Thr13C, Ser13C, Val13C, Leu13C, Ile13C, Pro13C, Asp13C, Glx13C, Phe13C, Tyr13C, Lys13C)
+
+# rename AA
+
+Fox.data<-  plyr::rename(Fox.data, c("Ala13C"="Ala", "Gly13C"="Gly", "Thr13C" = "Thr", 
+                                      "Ser13C" = "Ser", "Val13C" = "Val", "Leu13C" = "Leu",
+                                    "Ile13C" = "Ile", "Pro13C"= "Pro", "Asp13C" = "Asp",
+                                     "Glx13C" = "Glx", "Phe13C" = "Phe", "Tyr13C" = "Tyr", "Lys13C" = "Lys"))
+
+#### Kaneohe, Oahu data
+Wall.data<-d13C.dat
+
+# add a Location column
+Wall.data$Location<- "Oahu"
+
+# rename a level
+Wall.data$Fraction<-  revalue(Wall.data$Fraction, c("host"="host.HI", "symb"="symb.HI", 
+                                "plank"="plank.HI"))
+
+# select columns
+Wall.data<-Wall.data %>% 
+  select(Location, Species, Fraction, Alanine, Glycine, Threonine, Serine, Valine, Leucine, Isoleucine, Proline, Aspartic.acid, Glutamic.acid, Phenylalanine, Tyrosine, Lysine)
+
+# make names the same for both df
+Wall.data<- plyr::rename(Wall.data, c("Alanine"="Ala", "Glycine"="Gly", "Threonine" = "Thr", 
+                                      "Serine" = "Ser", "Valine" = "Val", "Leucine" = "Leu",
+                                    "Isoleucine" = "Ile", "Proline"= "Pro", "Aspartic.acid" = "Asp",
+                                     "Glutamic.acid" = "Glx", "Phenylalanine" = "Phe", 
+                                    "Tyrosine" = "Tyr", "Lysine" = "Lys"))
+
+# combine the dataframes
+Pacific.AA<-rbind(Fox.data, Wall.data)
+Pacific.AA$Fraction<-factor(Pacific.AA$Fraction, levels=c("host.Pal", "host.HI", "symb.Pal", "symb.HI",
+                            "plank.Pal", "plank.HI", "POM.Pal"))
+
+```
+  
+Run LDA analysis as performed in Fox et al. 
+```{r, full Pacific data source normalized, fig.cap="*Figure 4*. Linear discriminant analysis of carbon isotope fingerprints using mean-normalized values of six essential amino acids (isoleucine, leucine, lysine, phenylalanine, threonine, tyrosine, valine). Ellipses represent 95% confidence ellipses for each nutrition group (autotrophy [symbiont] or heterotrophy [plankton-POM). Hawaii data are host (n=6), symbiont (n=6) and plankton (n=1); Palmyra data are host (n = 19), symbionts (n=11), plankton (n=9) and POM (n=8) (Fox et al. 2019)."}
+######## For manuscript
+
+####### using normalized data 
+####### run LDA with 2 sources: (1) plankton+POM, (2) symbiont Palmyra 
+####### use the 2 sources as training data for Hawaii 
+####### display points according to location (Palmyra or Hawaii)  
+
+##########
+###########
+
+### Raw data = 'Pacific.AA'
+# LDA palmyra POM + plank, with Hawaii dataset
+
+# 6 EAA
+Pacific.EAA.df<- Pacific.AA %>% 
+  select(Location, Species, Fraction, Leu, Ile, Phe, Thr, Lys, Val)
+
+
+###### ###### ###### ###### ###### 
+###### NORMALIZING AAESS DATA BY Sample MEAN  (mean of all AA d13C) - raw individual AAd13C value
+
+# raw compiled data is 'Pacific.EAA.df'
+Pac.ess.norm<-Pacific.EAA.df
+
+#make ID column to run the normalization
+Pac.ess.norm$ID<-1:nrow(Pac.ess.norm)
+
+for(i in 1:length(Pac.ess.norm$ID)){
+  Pac.ess.norm$Ile.n[i] <- (Pac.ess.norm$Ile[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+  Pac.ess.norm$Leu.n[i] <- (Pac.ess.norm$Leu[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+  Pac.ess.norm$Lys.n[i] <- (Pac.ess.norm$Lys[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+  Pac.ess.norm$Phe.n[i] <- (Pac.ess.norm$Phe[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+  Pac.ess.norm$Thr.n[i] <- (Pac.ess.norm$Thr[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+  Pac.ess.norm$Val.n[i] <- (Pac.ess.norm$Val[i]-mean(as.numeric(Pac.ess.norm[i,4:9])))
+}
+
+Pac.ess.norm<-Pac.ess.norm[,c(1:3,10:16)] # drop raw columns and reorder
+
+############### 
+############### Normalized LDA data is 'Pac.ess.norm.df'
+
+# add new column of factors
+Pac.ess.norm$Fraction.grouped<-Pac.ess.norm$Fraction
+
+#rename these factors to animal, symbiont, plankton, POM
+Pac.ess.norm$Fraction.grouped<-revalue(Pac.ess.norm$Fraction.grouped,
+                                                    c("host.Pal"="animal", "host.HI"="animal",
+                                                      "symb.Pal"="symbiont", "symb.HI"="symbiont",
+                                                      "plank.Pal"="plankton", "plank.HI"="plankton", 
+                                                      "POM.Pal"="POM"))
+
+#reorder
+Pac.ess.norm.df<-Pac.ess.norm[,c(1:3,11,4:10)]
+
+
+# separate out animal
+
+# plankton, POM, symb = "zp"
+Pac.EAA.norm.zp<-
+  Pac.ess.norm.df[!(Pac.ess.norm.df$Fraction.grouped=="animal"),] 
+
+# host animal = "ho"
+Pac.EAA.norm.ho<-
+  Pac.ess.norm.df[(Pac.ess.norm.df$Fraction.grouped=="animal"),]
+
+# drop factor levels
+Pac.EAA.norm.zp<-droplevels(Pac.EAA.norm.zp)
+Pac.EAA.norm.ho<-droplevels(Pac.EAA.norm.ho)
+
+# remove ID columns for now
+Pac.EAA.frac.norm.zp<-Pac.EAA.norm.zp[,c(-1:-3,-5)]
+Pac.EAA.frac.norm.ho<-Pac.EAA.norm.ho[,c(-1:-3,-5)]
+
+############
+############ training for leave one out: how well can we estimate the sources?
+# with CV = true, results for classes and posteriors are for cross validation (CV, leave one out)
+LDA.Pac.EAA.frac.norm.zp <- lda(Fraction.grouped ~ Ile.n + Leu.n + Lys.n + Phe.n + Thr.n + Val.n, data = Pac.EAA.frac.norm.zp, CV = TRUE)
+
+# create a table which compares the classifcation of the LDA model to the actual spp
+ct.prod.norm <- table(Pac.EAA.frac.norm.zp$Fraction.grouped, LDA.Pac.EAA.frac.norm.zp$class)
+
+# total percent of samples correctly classified is the sum of the diagonal of this table
+sum(diag(prop.table(ct.prod.norm))) #71% effective
+
+# what % of each species is being correctly classified
+diag(prop.table(ct.prod.norm, 1)) # symbionts 100% classified, plankton 89%
+
+# create a training lda function from the source data - use this to classify the coral hosts
+training.EAA.norm.samples <- lda(Fraction.grouped ~ Ile.n + Leu.n + Lys.n + Phe.n + Thr.n + Val.n, data = Pac.EAA.frac.norm.zp)
+
+#examine coefficents of the discriminants to determine AAs contributing to groups seperation
+training.EAA.norm.samples$scaling # most for Valine > Leucine > Isoleucine > Phenylalanine
+
+# create a dataframe with these LDA coordinates
+datPred.norm.zp <- data.frame(Fraction.grouped=Pac.EAA.frac.norm.zp$Fraction.grouped,
+                                   predict(training.EAA.norm.samples)$x) #create data.frame
+datPred.norm.zp$ID<-Pac.EAA.norm.zp$ID
+
+# predict the coral animal fractions based on ess
+host.norm.res <- predict(training.EAA.norm.samples, Pac.EAA.frac.norm.ho) # 6 classified as plankton-POM
+
+#save the predicted coordinates 
+datPred2.norm.ho <- data.frame(Fraction.grouped='animal', host.norm.res$x)
+datPred2.norm.ho$ID<-Pac.EAA.norm.ho$ID
+
+# add to the original animal dataframe which individual got classified as what:
+Pac.EAA.norm.ho$class <- host.norm.res$class #--- only 2 classified as non-symb
+
+# merge the source and coral animal dataframes for plotting
+datPred3.norm.Pac <- rbind(datPred.norm.zp, datPred2.norm.ho) 
+
+#re-attach  medata by merging with ID
+# original df with palmyra corals and zoox dropped = "Pac.EAA.frac.df"
+EAA.frac.LD.norm.meta<-merge(datPred3.norm.Pac, Pac.ess.norm.df, by="ID")
+names(EAA.frac.LD.norm.meta)[names(EAA.frac.LD.norm.meta)=="Fraction.grouped.x"] <- "Fraction.grouped"
+
+#remove redundant group
+EAA.frac.LD.norm.meta<-EAA.frac.LD.norm.meta[,-8]
+
+EAA.frac.LD.norm.meta$Fraction.source2<-EAA.frac.LD.norm.meta$Fraction.grouped
+EAA.frac.LD.norm.meta$Fraction.source2<-revalue(EAA.frac.LD.norm.meta$Fraction.source2,
+                                                     c("POM"="plankton"))
+EAA.frac.LD.norm.meta<-droplevels(EAA.frac.LD.norm.meta)
+
+# for ellipses
+dat_ell.norm.EAA <- data.frame()
+for(g in levels(EAA.frac.LD.norm.meta$Fraction.source2)){
+dat_ell.norm.EAA <- rbind(dat_ell.norm.EAA,
+            cbind(as.data.frame(with
+                                (EAA.frac.LD.norm.meta[EAA.frac.LD.norm.meta$Fraction.source2==g,], 
+                                         ellipse(cor(LD1, LD2), 
+                                         scale=c(sd(LD1),sd(LD2)), 
+                                         centre=c(mean(LD1),mean(LD2))))), Fraction.source2=g))
+}
+
+# no ellipse drawn for animal
+dat_ell.norm.EAA.source<-dat_ell.norm.EAA[!(dat_ell.norm.EAA$Fraction.source2=="animal"),]
+
+# add back Location column
+EAA.frac.LD.norm.meta$Location<-Pac.ess.norm.df$Location
+
+# order factor
+EAA.frac.LD.norm.meta$Fraction.grouped<-factor(EAA.frac.LD.norm.meta$Fraction.grouped,
+                                                    levels=c("animal", "symbiont", "plankton", "POM"))
+
+# Fraction colors
+frac.color<-c("coral", "springgreen3", "steelblue1", "skyblue4")
+LDA.EAA.frac.norm<-ggplot(EAA.frac.LD.norm.meta, aes(LD1, LD2)) +
+  geom_point(aes(color = Fraction.grouped, shape=Location), size=2)+
+  scale_color_manual(values=frac.color) +
+  scale_shape_manual(values=c(1,16))+
+  geom_path(data=dat_ell.norm.EAA.source, aes(x=x,y=y,color=Fraction.source2),
+            size=0.5,linetype=2, show.legend=FALSE)  +
+  theme(axis.ticks.length=unit(0.25, "cm"), 
+        axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")),
+        axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
+  theme(text = element_text(size=8)) +
+  theme(legend.text=element_text(size=10), legend.key = element_blank()) +
+  theme(panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(),
+      panel.background = element_blank(), 
+      axis.line = element_line(colour = "black",  size=0.5))
+
+
+
+print(LDA.EAA.frac.norm)
+ggsave("figures/LDA.EAA.norm.2source.pdf", height=5, width=5)
+```
+  
+  
+Compare the mean values of d13C-AA for samples of plankton and POM in Palmyra (Fox et al, 2019) with those of our study. This is *Figure S5*
+
+```{r Pac means, fig.cap="*Figure S5*. Comparison of δ13C values for non-essential and essential amino acids in a pooled plankton sample from Kāne‘ohe Bay, O‘ahu, Hawai‘i and plankton and POM from Palmyra (reported in (Fox et al. 2019)). Values are mean ± SE (n=6 - 9), except for the Hawai‘i plankton (n=1)."}
+# summary of means, pretty close
+library(dplyr)
+plank.meta<-Pacific.AA[(Pacific.AA$Fraction=="plank.HI" | 
+                          Pacific.AA$Fraction=="plank.Pal" | 
+                          Pacific.AA$Fraction=="POM.Pal"),]
+
+plank.meta<-plank.meta[,c(-1:-2)] # remove extra columns
+
+AA.means.mean<-plank.meta %>% 
+  na.omit() %>%
+    group_by(Fraction) %>%
+    summarise_all("mean")
+
+
+# melt column data to rows
+md <- melt(plank.meta, id=("Fraction"))
+colnames(md)<-c("Fraction", "AA", "d13C.AA")
+md$Fraction<-droplevels(md$Fraction)
+plank.metadf<-md
+
+# drop levels to just Palmyra and Hawaii
+plank.metadf$Fraction<-revalue(plank.metadf$Fraction, c("plank.Pal"="Plankton Palmyra", "POM.Pal"="POM Palmyra", "plank.HI" = "Plankton Hawaii"))
+
+df.mean.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, mean, na.rm=TRUE)
+df.SE.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, na.rm=TRUE, std.error)
+df.n.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, length)
+df.SE.pl[is.na(df.SE.pl)] <- 0
+colnames(df.SE.pl)[3]="SE"
+df.mean.pl<-cbind(df.mean.pl, df.SE.pl[3])
+
+
+df.mean.pl$AA<-factor(df.mean.pl$AA, levels=c("Ala","Asp", "Glx", "Ile", "Leu", "Pro", "Val", "Gly", "Lys", "Ser", "Phe", "Thr", "Tyr"))
+
+pd <- position_dodge(0.5) #offset for error bars
+
+d13C.plank.POM.meta<-ggplot(df.mean.pl, aes(x=AA, y=d13C.AA, group=Fraction, shape=Fraction)) +
+  geom_errorbar(aes(ymin=d13C.AA-SE, ymax=d13C.AA+SE, color=Fraction), size=.5, width=0, position=pd) +
+  geom_point(aes(color=Fraction), size=2, position=pd) +
+  ggtitle(expression(paste(delta^{13}, C[AA], " plankton"))) +
+  geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
+  annotate(geom="text", label="Nonessential-AA", x=4, y=2.5, color="gray40") +
+  annotate(geom="text", label="Essential-AA", x=10, y=2.5, color="gray40") +
+  coord_cartesian(ylim=c(-35, 3)) + 
+  xlab("Amino Acids") +
+  scale_color_manual(values=c("lightgoldenrod4", "mediumorchid", "darkolivegreen3")) +
+  scale_shape_manual(values=c(19,3,19))+
+  ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
+  Fig.formatting
+print(d13C.plank.POM.meta)
+
+plot_grid(d13C.plank.POM.meta)
+ggsave("figures/Fig S5. Pacific.plank.means.pdf", height=5, width=6, encod="MacRoman")
+
+
+######
+
+# drop levels to just Palmyra and Hawaii
+plank.metadf$Fraction<-revalue(plank.metadf$Fraction, 
+                          c("Plankton Palmyra"="Palmyra", "POM Palmyra"="Palmyra", "Plankton Hawaii"="Hawaii"))
+
+
+df.mean.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, mean, na.rm=TRUE)
+df.SE.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, na.rm=TRUE, std.error)
+df.n.pl<-aggregate(d13C.AA~Fraction+AA, data=plank.metadf, length)
+df.SE.pl[is.na(df.SE.pl)] <- 0
+colnames(df.SE.pl)[3]="SE"
+df.mean.pl<-cbind(df.mean.pl, df.SE.pl[3])
+
+
+pd <- position_dodge(0.5) #offset for error bars
+
+d13C.plank.meta<-ggplot(df.mean.pl, aes(x=AA, y=d13C.AA, group=Fraction)) +
+  geom_errorbar(aes(ymin=d13C.AA-SE, ymax=d13C.AA+SE, color=Fraction), size=.5, width=0, position=pd) +
+  geom_point(aes(color=Fraction), size=2, position=pd) +
+  ggtitle(expression(paste(delta^{13}, C[AA], " plankton"))) +
+  geom_vline(xintercept=7.5, linetype="solid", color = "gray") +
+  annotate(geom="text", label="Nonessential-AA", x=4, y=2.5, color="gray40") +
+  annotate(geom="text", label="Essential-AA", x=10, y=2.5, color="gray40") +
+  coord_cartesian(ylim=c(-35, 3)) + 
+  xlab("Amino Acids") +
+  scale_color_manual(values=c("darkolivegreen4", "mediumorchid")) +
+  ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
+  Fig.formatting
+#print(d13C.plank.meta)
+```
