@@ -1,7 +1,7 @@
 ---
 title: Compound specific isotope analysis of individual amino acids in reef corals
 author: "CB Wall, RD Gates, BN Popp"
-date: "9/25/2018"
+date: "11/23/2020"
 output:
   html_document:
     code_folding: hide
@@ -1808,3 +1808,46 @@ d13C.plank.meta<-ggplot(df.mean.pl, aes(x=AA, y=d13C.AA, group=Fraction)) +
   Fig.formatting
 #print(d13C.plank.meta)
 ```
+
+```{r}
+SWiso<-read.csv("data/other/Wall_bulk_isotopes_SW_ismej.csv")
+
+# fraction matters most
+
+#### d13C
+mod1<-(lm(d13C~Location+Season+SW.fraction..um, data=SWiso)); Anova(mod, type=2) # no location or season effect
+
+posthoc<-emmeans(mod1, ~SW.fraction..um)
+multcomp::cld(posthoc, Letters=letters) # only diff for the 10-100 um fraction
+
+#### d15N
+mod2<-(lm(d15N~Location+Season+SW.fraction..um, data=SWiso)); Anova(mod, type=2) # mild season effect
+
+posthoc<-emmeans(mod2, ~SW.fraction..um) 
+multcomp::cld(posthoc, Letters=letters)
+
+posthoc<-emmeans(mod2, ~Season)
+multcomp::cld(posthoc, Letters=letters) # diff small <0.3 permil
+
+########
+SWiso$Reef<-factor(SWiso$Reef, levels=c("F1-46", "R42", "F2-R25", "R25", "F8-R10", "HIMB"))
+SWiso$Location<-factor(SWiso$Location, levels=c("NW", "NE", "CW", "CE", "SW", "SE"))
+SWiso$SW.fraction..um<-factor(SWiso$SW.fraction..um, levels=c(">243", "<243", "100-243", "10-100", "0-10"))
+
+winter.data<-SWiso[(SWiso$Season=="winter"),]
+summer.data<-SWiso[(SWiso$Season=="summer"),]
+
+#### making scatter for d15N and d13C, pooled across seasons and sites
+mix.N.mean<-aggregate(d15N~SW.fraction..um, data=SWiso, mean)
+mix.N.se<-aggregate(d15N~SW.fraction..um, data=SWiso, std.error)
+mix.N.n<-aggregate(d15N~SW.fraction..um, data=SWiso, length)
+
+mix.C.mean<-aggregate(d13C~SW.fraction..um, data=SWiso, mean)
+mix.C.se<-aggregate(d13C~SW.fraction..um, data=SWiso, std.error)
+mix.C.n<-aggregate(d13C~SW.fraction..um, data=SWiso, length)
+
+mix.data<-cbind(mix.N.mean, mix.C.mean[c(2,0)], mix.N.se[c(2,0)], mix.C.se[c(2,0)]); colnames(mix.data)=c("fraction", "d15N", "d13C", "d15N.se", "d13C.se")
+
+write.table(mix.data, file = "output/bulk isotopes.Wall.ISMEJ.csv", sep = ",", quote = FALSE, row.names = F)
+```
+
