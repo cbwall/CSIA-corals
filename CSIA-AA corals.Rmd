@@ -1,7 +1,7 @@
 ---
 title: Compound specific isotope analysis of individual amino acids in reef corals
 author: "CB Wall, NJ Wallsgrove, RD Gates, BN Popp (Limnology and Oceanography)"
-date: "January 2021"
+date: "February 2021"
 output:
   html_document:
     code_folding: hide
@@ -46,7 +46,8 @@ Here, we exposed a reef coral (*Montipora capitata*) in symbiosis with Symbiodin
 
   
 ### Bulk isotopes  
-Bulk sample isotope data from plankton in Kāne'ohe Bay (previously published, Wall et al. 2020, *ISME J*)
+Bulk sample isotope data from plankton in Kāne'ohe Bay (previously published, Wall et al. 2020, *ISME J*)  
+(1) **Plankton δ^13^C**
 ```{r, plankton bulk isotopes}
 SWiso<-read.csv("data/other/Wall_bulk_isotopes_SW_ismej.csv")
 
@@ -56,7 +57,10 @@ mod1<-(lm(d13C~Location+Season+SW.fraction..um, data=SWiso)); Anova(mod1, type=2
 
 posthoc<-emmeans(mod1, ~SW.fraction..um)
 multcomp::cld(posthoc, Letters=letters) # only diff for the 10-100 um fraction
+```
 
+(2) **Plankton δ^15^N**
+```{r, plankton N bulk isotopes}
 #### d15N
 mod2<-(lm(d15N~Location+Season+SW.fraction..um, data=SWiso)); Anova(mod2, type=2) # mild season effect
 
@@ -89,7 +93,7 @@ write.table(mix.data, file = "output/bulk isotopes.Wall.ISMEJ.csv", sep = ",", q
 ```
 <center>
 
-![](figures/iso.sources.KBay.png){ width=60%}  
+![](figures/iso.sources.KBay.png){ width=40%}  
 
 </center>
   
@@ -99,15 +103,16 @@ write.table(mix.data, file = "output/bulk isotopes.Wall.ISMEJ.csv", sep = ",", q
 
 Carbon and nitrogen isotope values in plankton, Symbiodiniaceae symbionts and coral host tissues. With linear models testing effect of treatment and fraction 
 ```{r, bulk isotopes, fig.cap="*Figure 1*. Bulk tissue carbon and nitrogen isotope values for corals (host), their endosymbiont Symbiodiniaceae (symbiont), and a pooled plankton sample (plank) at three Light-by-Feeding nutrition treatments. L-NF (Light-Not Fed, autotrophic), L-F (Light-Fed, mixotrophic), Dark-Fed (heterotrophic). Boxplots are n=2, except for plankton (n=1).", fig.dim=c(8,4)}
+
 bulk<-read.csv("data/bulkCN.isotopes.csv")
 bulk$Treat.Int<-factor(bulk$Treat.Int, levels=c("L-NF", "L-F", "D-F", "plank"))
 bulk$Fraction<-factor(bulk$Fraction, levels=c("host", "symb", "plank"))
 
 bulk.HS<-bulk[!(bulk$Fraction=="plank"),] # plankton removed from fraction
 
-bulk.d15N.means<-aggregate(d15N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.d15N.means
-bulk.d13C.means<-aggregate(d13C~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.d13C.means
-bulk.CN.means<-aggregate(C.N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE); bulk.CN.means
+bulk.d15N.means<-aggregate(d15N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE)
+bulk.d13C.means<-aggregate(d13C~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE)
+bulk.CN.means<-aggregate(C.N~Fraction+Treat.Int, data=bulk, mean, na.rm=TRUE)
 
 bulk.means<-cbind(bulk.d15N.means, bulk.d13C.means[3], bulk.CN.means[3])
 
@@ -138,10 +143,15 @@ d13C.plot<-ggplot(bulk, aes(y=d13C, x=Treat.Int))+
   ylab(expression(paste(delta^{13}, C, " (\u2030, V-PDB)")))+
   xlab("Treatment") + theme(legend.title = element_blank()) +
   format.fig 
-
+```
+  
+(1) **Bulk δ^13^C: Fraction and Treatment**
+```{r, bulk C isotopes}
 anova(lm(d13C ~ Fraction+Treat.Int, data=bulk.HS))
-
-
+```
+  
+(2) **Bulk δ^15^N: Fraction and Treatment**
+```{r, bulk N isotopes}
 # d15N
 d15N.plot<-ggplot(bulk, aes(y=d15N, x=Treat.Int))+
   geom_boxplot(aes(fill=Fraction)) + 
@@ -153,7 +163,10 @@ d15N.plot<-ggplot(bulk, aes(y=d15N, x=Treat.Int))+
   format.fig + theme(legend.position = "none")
 
 anova(lm(d15N ~ Fraction+Treat.Int, data=bulk.HS))
-
+```
+  
+(3) **Bulk coral-symbiont C:N: Fraction and Treatment**
+```{r, bulk C:N isotopes}
 ####
 # C:N
 C.N.plot<-ggplot(bulk, aes(y=C.N, x=Treat.Int), na.rm=T)+
@@ -166,13 +179,15 @@ C.N.plot<-ggplot(bulk, aes(y=C.N, x=Treat.Int), na.rm=T)+
   format.fig + theme(legend.position = "none")
 
 anova(lm(C.N ~ Fraction+Treat.Int, data=bulk.HS))
-
-
+```
+  
+(4) **Bulk difference in coral-symbiont δ^13^C: Treatment**
+```{r, bulk dHS C isotopes}
 ####
 # d13H-S
 d13C.HS.plot<-ggplot(bulk.HS, aes(y=d13C.H.S, x=Treat.Int), na.rm=T)+
-  geom_boxplot() + 
-  geom_dotplot(
+  geom_boxplot(fill=c("lightblue", "goldenrod1", "gray50")) + 
+  geom_dotplot(fill=c("lightblue", "lightblue", "darkgoldenrod1",  "darkgoldenrod1", "gray50", "gray50"),
                binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
                position = position_dodge(0.75))+
   ylab(expression(paste(delta^{13}, C[H-S], " (\u2030)"))) +
@@ -180,12 +195,15 @@ d13C.HS.plot<-ggplot(bulk.HS, aes(y=d13C.H.S, x=Treat.Int), na.rm=T)+
   format.fig + theme(legend.position = "none")
 
 anova(lm(d13C.H.S ~ Treat.Int, data=bulk.HS))
-
+```
+  
+(5) **Bulk differences in coral-symbiont δ^15^N: Treatment**
+```{r, bulk dHS N isotopes}
 
 # d15NH-S
 d15N.HS.plot<-ggplot(bulk.HS, aes(y=d15N.H.S, x=Treat.Int), na.rm=T)+
-  geom_boxplot() +
-  geom_dotplot(
+  geom_boxplot(fill=c("lightblue", "darkgoldenrod1", "gray50")) + 
+  geom_dotplot(fill=c("lightblue", "lightblue", "darkgoldenrod1",  "darkgoldenrod1", "gray50", "gray50"),
                binaxis='y', stackdir='center', dotsize = 0.5, alpha=0.5,
                position = position_dodge(0.75))+
   ylab(expression(paste(delta^{15}, N[H-S], " (\u2030)")))+
@@ -193,7 +211,10 @@ d15N.HS.plot<-ggplot(bulk.HS, aes(y=d15N.H.S, x=Treat.Int), na.rm=T)+
   format.fig + theme(legend.position = "none")
 
 anova(lm(d15N.H.S ~ Treat.Int, data=bulk.HS))
-
+```
+  
+(6) **Bulk tissue isotope coral-symbiont figure**
+```{r, bulk C and N isotopes, fig.dim=c(8.5,2.5)}
 ####
 
 bulk.legend <- get_legend(
@@ -203,12 +224,12 @@ bulk.legend <- get_legend(
 bulk.figures<-(d13C.plot+theme(legend.position = "none") | d15N.plot | C.N.plot | d13C.HS.plot | d15N.HS.plot |
                  bulk.legend)
 print(bulk.figures)
-ggsave("figures/Fig 1. bulk isotope.pdf", height=3.5, width=12, encod="MacRoman")
+ggsave("figures/execute code/Fig 1. bulk isotope.pdf", height=3.5, width=12, encod="MacRoman")
 ```
 
 ### CSIA Carbon and Nitrogen
 Carbon in amino acids of plankton, Symbiodiniaceae symbionts and coral host tissues.
-```{r Carbon, results='hide'}
+```{r, Carbon, results='hide'}
 ######## ######## 
 ## Carbon 
 ######## ######## 
@@ -229,8 +250,9 @@ d15N.dat<-d15N.dat[ , !(names(d15N.dat) %in% c("Norleucine", "Aminoadipic.Acid",
 d15N.dat$Fraction<-factor(d15N.dat$Fraction, levels=c("host", "symb", "plank"))
 ```
   
-#### Permanova
-```{r}
+#### Permanova  
+Carbon isotope PERMANOVA using levels of Fraction and Treatment
+```{r, Carbon PERMANOVA}
 ## Permanova carbon
 d13C.dat.perm<- d13C.dat[!(d13C.dat$Fraction=="plank"),]
 df.manova.C<-d13C.dat.perm[, c(11:23)] # remove factor columns
@@ -241,7 +263,10 @@ perman.C<-adonis2(df.manova.C.abs~Fraction*Treat.Int, data=d13C.dat.perm, permut
                 method="euclidean", sqrt.dist = TRUE)
 perman.C
 write.csv(perman.C, "output/perman.C.csv")
-
+```
+  
+Nitrogen isotope PERMANOVA using levels of Fraction and Treatment
+```{r, Nitrogen PERMANOVA}
 ## Permanova nitrogen
 d15N.dat.perm<- d15N.dat[!(d15N.dat$Fraction=="plank"),]
 d15N.dat.perm$Threonine<-d15N.dat.perm$Threonine+3 # adding a constant to make positive values
@@ -257,12 +282,14 @@ write.csv(perman.N, "output/perman.N.csv")
 ```
 
 #### PCA 
-
-**Carbon by treatment**  
+Four PCAs  
+(a) *Carbon PCA by fraction (plankton, host, symbiont)*  
+(b) *Nitrogen PCA by fraction (plankton, host, symbiont)*    
+(c) *Carbon PCA by treatment*  
+(d) *Nitrogen PCA by treatment*  
   
-```{r PCA carbon by treatment, results='hide', message=FALSE, fig.show='hide'}
-######## ######## ######## ######## 
-######## ######## ######## ######## by treatment
+```{r PCA carbon by fraction, results='hide', message=FALSE, fig.show='hide'}
+######## ######## ######## ######## carbon by fraction
 # PCA dataframe
 PCA.df.C<-d13C.dat[, c(7:8,11:23)]
 
@@ -271,6 +298,56 @@ PC.C.summary<-summary(PC.C)
 ev.C<-PC.C$sdev^2 
 newdat.C<-PC.C$x[,1:4] # 2 PCAs explain 81% of variance
 #plot(PC, type="lines", main="PC.area eigenvalues")
+
+frac.color<- c("coral", "seagreen3", "mediumorchid")
+  
+PC.fig3.C.frac <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                   groups= PCA.df.C[,2], ellipse = TRUE, ellipse.prob=0.90, 
+                   circle = FALSE) +
+  scale_color_manual(values=frac.color)+
+  theme_classic() +
+  coord_cartesian(xlim = c(-8, 8), ylim=c(-4, 4)) +
+  theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
+  theme(legend.text=element_text(size=10)) +
+  theme(panel.background = element_rect(colour = "black", size=1))+
+  theme(legend.key = element_blank())+
+  theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
+  annotate("text", x=6, y=3.6,  size=5, label= expression(paste(delta^{13},C[AA])))
+print(PC.fig3.C.frac)
+#ggsave("figures/execute code/carbon/PCA_d13C.frac.pdf", height=5, width=8, encod="MacRoman")
+```
+```{r PCA nitrogen by fraction, results='hide', message=FALSE, fig.show='hide'}
+# PCA dataframe
+PCA.df.N<-d15N.dat[, c(7:8,11:23)]
+
+PC.N<- prcomp(PCA.df.N[, c(-1:-2)], center = TRUE, scale= TRUE) 
+PC.N.summary<-summary(PC.N)
+ev.N<-PC.N$sdev^2 
+newdat.N<-PC.N$x[,1:4] # 2 PCAs explain 74% of variance
+#plot(PC, type="lines", main="PC.area eigenvalues")
+
+######################### nitrogen by fractions
+## PC1 and PC2
+PC.fig4.N.frac <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
+                   groups= PCA.df.N[,2], ellipse = TRUE, ellipse.prob=0.90, 
+                   circle = FALSE) + 
+  scale_color_manual(values=frac.color)+
+  theme_classic() +
+  coord_cartesian(xlim = c(-8, 5), ylim=c(-6, 6)) + 
+  theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
+  theme(legend.text=element_text(size=10)) +
+  theme(panel.background = element_rect(colour = "black", size=1))+
+  theme(legend.key = element_blank())+
+  theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
+  annotate("text", x=4, y=5.5,  size=5, label= expression(paste(delta^{15},N[AA])))
+print(PC.fig4.N.frac)
+#ggsave("figures/execute code/nitrogen/PCA_d15N.frac.pdf", height=5, width=8, encod="MacRoman")
+```
+```{r PCA carbon by treatment, results='hide', message=FALSE, fig.show='hide'}
+######## ######## ######## ######## carbon by treatment
+# PCA dataframe
+PCA.df.C$Treat.Int<-factor(PCA.df.C$Treat.Int,
+                              levels=c("L-NF", "L-F", "D-F", "plank"))
 
 ## PC1 and PC2
 trt.color<-c("lightskyblue", "darkgoldenrod1", "gray70", "mediumorchid")
@@ -283,27 +360,21 @@ PC.fig1.C.trt <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1,
   scale_x_continuous(breaks=pretty_breaks(n=5))+
   coord_cartesian(xlim = c(-8, 8), ylim=c(-4, 4))+ 
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
-  theme(legend.text=element_text(size=15)) +
+  theme(legend.text=element_text(size=10)) +
   theme(panel.background = element_rect(colour = "black", size=1))+
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=6, y=3.6,  size=5, label= expression(paste(delta^{13},C[AA])))
 print(PC.fig1.C.trt)
-#ggsave("figures/carbon/PCA_d13C.trt.pdf", height=5, width=8, encod="MacRoman")
-
+#ggsave("figures/execute code/carbon/PCA_d13C.trt.pdf", height=5, width=8, encod="MacRoman")
 ```
-  
-**Nitrogen by treatment**
 ```{r PCA nitrogen by treatment, results='hide', message=FALSE, fig.show='hide'}
-# PCA dataframe
-PCA.df.N<-d15N.dat[, c(7:8,11:23)]
-PC.N<- prcomp(PCA.df.N[, c(-1:-2)], center = TRUE, scale= TRUE) 
-PC.N.summary<-summary(PC.N)
-ev.N<-PC.N$sdev^2 
-newdat.N<-PC.N$x[,1:4] # 2 PCAs explain 74% of variance
-#plot(PC, type="lines", main="PC.area eigenvalues")
+######################## nitrogen by treatments
+PCA.df.N$Treat.Int<-factor(PCA.df.N$Treat.Int,
+                              levels=c("L-NF", "L-F", "D-F", "plank"))
 
-######################## treatments
+trt.color<-c("lightskyblue", "darkgoldenrod1", "gray70", "mediumorchid")
+
 ## PC1 and PC2
 PC.fig2.N.trt <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
                    groups= PCA.df.N[,1], ellipse = TRUE, ellipse.prob=0.90,
@@ -312,64 +383,21 @@ PC.fig2.N.trt <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1,
   theme_classic() +
   coord_cartesian(xlim = c(-8, 5), ylim=c(-6, 6)) +
   theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
-  theme(legend.text=element_text(size=15)) +
+  theme(legend.text=element_text(size=10)) +
   theme(panel.background = element_rect(colour = "black", size=1))+
   theme(legend.key = element_blank())+
   theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
   annotate("text", x=4, y=5.5,  size=5, label= expression(paste(delta^{15},N[AA])))
 print(PC.fig2.N.trt)
-#ggsave("figures/nitrogen/PCA_d15N.trt.pdf", height=5, width=6, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/PCA_d15N.trt.pdf", height=5, width=6, encod="MacRoman")
 ```
-  
-**Carbon PCA by fraction (plankton, host, symbiont)** 
-```{r PCA carbon by fraction, results='hide', message=FALSE, fig.show='hide'}
-######## ######## ######## ######## 
-######## ######## ######## ######## by fraction
-frac.color<- c("coral", "seagreen3", "mediumorchid")
-  
-PC.fig3.C.frac <- ggbiplot(PC.C, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                   groups= PCA.df.C[,2], ellipse = TRUE, ellipse.prob=0.90, 
-                   circle = FALSE) +
-  scale_color_manual(values=frac.color)+
-  theme_classic() +
-  coord_cartesian(xlim = c(-8, 8), ylim=c(-4, 4)) +
-  theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
-  theme(legend.text=element_text(size=15)) +
-  theme(panel.background = element_rect(colour = "black", size=1))+
-  theme(legend.key = element_blank())+
-  theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
-  annotate("text", x=6, y=3.6,  size=5, label= expression(paste(delta^{13},C[AA])))
-print(PC.fig3.C.frac)
-#ggsave("figures/carbon/PCA_d13C.frac.pdf", height=5, width=8, encod="MacRoman")
-```
-
-**Nitrogen PCA by fraction (plankton, host, symbiont)** 
-```{r PCA nitrogen by fraction, results='hide', message=FALSE, fig.show='hide'}
-######################### fractions
-## PC1 and PC2
-PC.fig4.N.frac <- ggbiplot(PC.N, choices = 1:2, obs.scale = 1, var.scale = 1, 
-                   groups= PCA.df.N[,2], ellipse = TRUE, ellipse.prob=0.90, 
-                   circle = FALSE) + 
-  scale_color_manual(values=frac.color)+
-  theme_classic() +
-  coord_cartesian(xlim = c(-8, 5), ylim=c(-6, 6)) + 
-  theme(axis.ticks.length=unit(-0.25, "cm"), axis.text.y=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm")), axis.text.x=element_text(margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"))) +
-  theme(legend.text=element_text(size=15)) +
-  theme(panel.background = element_rect(colour = "black", size=1))+
-  theme(legend.key = element_blank())+
-  theme(legend.direction = 'horizontal', legend.position = 'top') +theme(aspect.ratio=0.8) +
-  annotate("text", x=4, y=5.5,  size=5, label= expression(paste(delta^{15},N[AA])))
-print(PC.fig4.N.frac)
-#ggsave("figures/nitrogen/PCA_d15N.frac.pdf", height=5, width=8, encod="MacRoman")
-```
-  
   
 **Figure 2-- 4 panel PCA.combined**
 ```{r, fig.dim=c(8,8), results='hide', fig.cap="*Figure 2*. Principal component analysis of carbon (left) and nitrogen (right) isotope values of individual amino acids in corals, Symbiodiniaceae, and a pooled plankton sample in relation to tissue fraction (top) and treatments (bottom). Ellipses represent 90% standard deviation with arrows for individual amino acids being significant (p<0.05) correlation vectors."}
 #### compile the 4 PCA ###
 library("cowplot")
 plot_grid(PC.fig3.C.frac, PC.fig4.N.frac, PC.fig1.C.trt, PC.fig2.N.trt, ncol = 2)
-ggsave("figures/Fig 2.PCAs.pdf", height=8, width=11, encod="MacRoman")
+ggsave("figures/execute code/Fig 2.PCAs.pdf", height=8, width=11, encod="MacRoman")
 
 ######
 ```
@@ -379,7 +407,7 @@ ggsave("figures/Fig 2.PCAs.pdf", height=8, width=11, encod="MacRoman")
 #### Models  
 Run models looking for effects of Fraction or the Treatment-Interaction (feeding/light).
   
-```{r models, fig.dim=c(6,3)}
+```{r, C models, fig.dim=c(6,3)}
 d13C.dat2<-d13C.dat[!(d13C.dat$Fraction=="plank"),] #remove plankton for now
 d13C.host<-d13C.dat[(d13C.dat$Fraction=="host"),] # just host
 d13C.symb<-d13C.dat[(d13C.dat$Fraction=="symb"),] # just symbiont
@@ -391,35 +419,7 @@ for(i in c(11:23)){
   print(TukeyHSD(mod))
   plot(allEffects(mod), ylab=colnames(d13C.dat2)[i], cex.axis=0.5, cex.lab=0.5)
 }
-# Almost Fraction effect for Alanine, Proline
-# Fraction effect for: Glycine, Glutamic acid
-# Treatment effect for: Glycine
-# Almost Treatment effect: Glutamic Acid
-
-############ just host
-for(i in c(11:23)){
-  Y=d13C.host[,i]
-  mod<-aov(Y~Treat.Int, data=d13C.host)
-  print(anova(mod))
-  #print(TukeyHSD(mod))
-  plot(allEffects(mod), ylab=colnames(d13C.host)[i], cex.axis=0.5, cex.lab=0.5)
-}
-# If running only "Treat.Int" no effects accept p=0.06 for glycine
-# If running "Light.Trt+Feed.Trt" then p=0.03 for glycine
-
-############ just symbiont
-for(i in c(11:23)){
-  Y=d13C.symb[,i]
-  mod<-aov(Y~Treat.Int, data=d13C.symb)
-  print(anova(mod))
-  #print(TukeyHSD(mod))
-  plot(allEffects(mod), ylab=colnames(d13C.symb)[i], cex.axis=0.5, cex.lab=0.5)
-}
-# If running only "Treat.Int" no effects
-# If running "Light.Trt+Feed.Trt" then p=0.03 for serine
-
-```
-  
+``` 
   
 #### Figures  
 -New dataframe (long format) here to make figures. Same data as above.
@@ -452,7 +452,7 @@ dfC<-d13C.dat.long
 ```
   
 #### Table: Carbon Essential and Non-essential AA
-
+Make a table and figure for the d13C by fraction and treatments
 ```{r EAA and NEAA, results='hide'}
 ##################
 # all essentail and non-essential AA
@@ -462,10 +462,7 @@ colnames(AA.sd)[4]="SD"
 AA.means<-cbind(AA.means, AA.sd[4])
 AA.means$Fraction<-factor(AA.means$Fraction, levels=c("host", "symb", "plank"))
 
-```
-   
-- d13C by fraction and treatments, showing d13C.CSIA_frac.trt
-```{r, results='hide'}
+
 #################
 #################
 # d13C by fraction and treatments
@@ -529,12 +526,10 @@ d13C.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d13C.value)) +
   ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
   Fig.formatting
 #print(d13C.CSIA_frac.trt)
-#ggsave("figures/carbon/d13C.CSIA_frac.trt.pdf", height=5, width=8, encod="MacRoman")
-```
+#ggsave("figures/execute code/carbon/d13C.CSIA_frac.trt.pdf", height=5, width=8, encod="MacRoman")
 
-  
-- all d13C amino acids: showing d13C.CSIA_Trt.alone -- move to **Supplement**
-```{r, results='hide'}
+##################
+# all d13C amino acids: showing d13C.CSIA_Trt.alone -- move to **Supplement**
 ##################
 # all d13C amino acids
 
@@ -561,12 +556,13 @@ pd <- position_dodge(0.5) #offset for error bars
   ylab(expression(paste(delta^{13}, C[AA], " (\u2030, V-PDB)"))) +
   Fig.formatting
 #print(d13C.CSIA_Trt.alone)
-#ggsave("figures/carbon/d13C.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
-```
-  
+#ggsave("figures/execute code/carbon/d13C.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
+
    
-- d13C by fraction, showing d13C.CSIA_frac -- move to **Supplement**
-```{r}
+
+###########################
+# d13C by fraction, showing d13C.CSIA_frac -- move to **Supplement** 
+###########################
 # all AA pooled by fraction
 
 
@@ -596,21 +592,19 @@ d13C.CSIA_Fraction<- ggplot(df.mean3, aes(x=AA.short, y=d13C.value)) +
   scale_shape_manual(values=c(19,19,3))+
   Fig.formatting
 #print(d13C.CSIA_Fraction)
-#ggsave("figures/carbon/d13C.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/carbon/d13C.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
 ```
 
-  
 
 ### Nitrogen AA 
   
 #### Models  
-  
 Overall we see:  
 - Fraction effect for: Leucine, Proline, Aspartic Acid, Glutamic Acid, Tyrosine.  
 - Treatment effect for: Leucine  
 
-```{r, fig.dim=c(6,3)}
-d15N.dat2<-d15N.dat[!(d15N.dat$Fraction=="plank"),] #remove plankton for now
+```{r, fig.dim=c(6,3), fig.show='hide', results='hide'}
+d15N.dat2<-d15N.dat[!(d15N.dat$Fraction=="plank"),] #remove plankton for now 
 
 for(i in c(11:23)){
   Y=d15N.dat2[,i]
@@ -651,8 +645,10 @@ d15N.dat.long$Treat.Int<-factor(d15N.dat.long$Treat.Int, levels=c("L-NF", "L-F",
 dfN<-d15N.dat.long
 ```
 
-  
-- all AA pooled by fraction, showing d15N.CSIA_Fraction
+Code chunks here for figures...  
+(1) *all AA pooled by fraction, showing d15N.CSIA_Fraction*  
+(2) *fraction and treatment, showing d15N.CSIA_frac.trt*  
+(3) *all amino acids together*  
 ```{r, results='hide'}
 ######## Figures
 pd <- position_dodge(0.5) #offset for error bars
@@ -700,10 +696,8 @@ d15N.CSIA_Fraction<-ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
   scale_color_manual(values=frac.color)+
   Fig.formatting
 #print(d15N.CSIA_Fraction)
-#ggsave("figures/nitrogen/d15N.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/d15N.CSIA_Fraction.pdf", height=5, width=8, encod="MacRoman")
 ```
-  
-- Fraction and treatment, showing d15N.CSIA_frac.trt
 ```{r, results='hide'}
 #################
 df.mean<-aggregate(d15N.value~AA.short+Fraction+Treat.Int, data=dfN, mean, na.rm=TRUE)
@@ -730,10 +724,8 @@ d15N.CSIA_frac.trt<-ggplot(df.mean, aes(x=AA.short, y=d15N.value)) +
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
 #print(d15N.CSIA_frac.trt)
-#ggsave("figures/nitrogen/d15N.CSIA_frac.trt.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/d15N.CSIA_frac.trt.pdf", height=5, width=8, encod="MacRoman")
 ```
-  
-- all amino acids, showing d15N.CSIA_Trt.alone.pdf
 ```{r, results='hide'}
 ##################
 # all d15N amino acids
@@ -759,7 +751,7 @@ d15N.CSIA_Trt.alone<-ggplot(df.mean2, aes(x=AA.short, y=d15N.value, group=Treat.
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
 #print(d15N.CSIA_Trt.alone)
-#ggsave("figures/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/d15N.CSIA_Trt.alone.pdf", height=5, width=8, encod="MacRoman")
 ```
   
 **Figure 3-- AA.frac-by-treatment combined**
@@ -784,7 +776,7 @@ AA.frac.trt<- plot_grid(d13C.CSIA_frac.trt + ggtitle("")+
                        annotate(geom="text", size=3, label="(b)", x=1, y=15, color="black"),
                        ncol=2,nrow=1)
 plot_grid(AA.frac.trt, leg1, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
-dev.copy(pdf, "figures/Fig 3.AA.frac.trt.pdf", width = 10, height = 5, encod="MacRoman")
+dev.copy(pdf, "figures/execute code/Fig 3.AA.frac.trt.pdf", width = 10, height = 5, encod="MacRoman")
 dev.off()
 ```  
  
@@ -810,7 +802,7 @@ AA.trt<- plot_grid(d13C.CSIA_Fraction + ggtitle("")+
                        annotate(geom="text", size=3, label="(b)", x=1, y=15, color="black"),
                        ncol=2,nrow=1)
 plot_grid(AA.trt, leg3, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
-dev.copy(pdf, "figures/Fig S2.AA.frac.pdf", width = 10, height = 5, encod="MacRoman")
+dev.copy(pdf, "figures/execute code/Fig S1ab.AA.frac.pdf", width = 10, height = 5, encod="MacRoman")
 dev.off()
 ```  
    
@@ -836,7 +828,7 @@ AA.trt<- plot_grid(d13C.CSIA_Trt.alone + ggtitle("")+
                        annotate(geom="text", size=3, label="(b)", x=1, y=15, color="black"),
                        ncol=2,nrow=1)
 plot_grid(AA.trt, leg2, rel_widths = c(8, 1)) # legend  1/8 size as first obj.
-dev.copy(pdf, "figures/Fig S1.AA.trt.pdf", width = 10, height = 5, encod="MacRoman")
+dev.copy(pdf, "figures/execute code/Fig S1cd.AA.trt.pdf", width = 10, height = 5, encod="MacRoman")
 dev.off()
 ```  
 
@@ -845,8 +837,8 @@ dev.off()
 Trophic position using trophic AA gultamic acid (Glx) and source amino acid phenylalanine (Phe), following [Chikaraishi et al. 2009](https://aslopubs.onlinelibrary.wiley.com/doi/10.4319/lom.2009.7.740)
   
 $Trophic~position~(TP){_C}{_S}{_I}{_A}= [(δ{^1}{^5}N{_T}{_r}{_p}~-~δ{^1}{^5}N{_S}{_r}{_c})-B/~TDF{_A}{_A} +1$  
-  
-- Trophic Position, showing TP.glx.phe
+
+Where beta = 3.4 and TDF (trophic discrimination factor) is 7.6
 ```{r, results='hide'}
 ###
 # scatter of glutamic.acid vs. phenylalanine
@@ -892,15 +884,14 @@ TP<-ggplot(df.mean, aes(x=Treat.Int, y=TP)) +
   scale_color_manual(values=frac.color) +
   Fig.formatting
 #print(TP)
-#ggsave("figures/nitrogen/TP.glx.phe.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/TP.glx.phe.pdf", height=5, width=8, encod="MacRoman")
 ```
-  
   
 ##### Sum V
 Calculate Sum-V, [McCarthy et al. 2007](https://www.sciencedirect.com/science/article/pii/S0016703707004255). The sum-V parameter is a proxy for total heterotrophic resynthesis. It is defined as the average deviation in the d15N values of the trophic amino acids Ala, Asp, Glx, Ile, Leu, and Pro.  
 
 - showing d15N.sumV.CSIA **move to supplement**
-```{r, results='hide', warning=FALSE}
+```{r, results='hide', warning=FALSE, fig.dim=c(4,4)}
 ###########
 ###########
 # d15N.CSIA.dat long
@@ -973,14 +964,14 @@ sumV<-ggplot(sumVdf, aes(x=Treat.Int, y=mean.sumV)) +
   ylab(expression(paste(delta^{15}, N[Sum-V], " (\u2030, Air)"))) +
   Fig.formatting
 #print(sumV)
-#ggsave("figures/nitrogen/d15N.sumV.CSIA.pdf", height=5, width=8, encod="MacRoman")
+#ggsave("figures/execute code/nitrogen/d15N.sumV.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
 
-  ##### Weighted means 
+##### Weighted means 
 These are the weighted means for trophic and source AA following [Bradley et al. 2015](https://aslopubs.onlinelibrary.wiley.com/doi/abs/10.1002/lom3.10041). Weighted mean AA δ^15^N values.  
   
 - weighted means, showing wt.mean.d15N.CSIA **supplement**
-```{r, results='hide', warning=FALSE, fig.cap="*Figure S3*. δ^15^N~AA~ weighted means for trophic and source amino acids according to coral tissue fractions (host, symbiont) and experimental nutrition-treatments. Values are mean ± SD (n=2)."}
+```{r, results='hide', warning=FALSE, fig.cap="*Figure S3*. δ^15^N~AA~ weighted means for trophic and source amino acids according to coral tissue fractions (host, symbiont) and experimental nutrition-treatments. Values are mean ± SD (n=2).", fig.dim=c(4,4)}
 ###########################
 ##################
 #########
@@ -1021,7 +1012,7 @@ ggplot(wt.mean.df, aes(x=Treat.Int, y=wt.mean)) +
                    labels=c("Light\nNot Fed", "Light\nFed", "Dark\nFed")) +
   ylab(expression(paste(delta^{15}, N[AA], " (\u2030, Air)"))) +
   Fig.formatting
-ggsave("figures/Fig S3.wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
+ggsave("figures/execute code/Fig S3.wt.mean.d15N.CSIA.pdf", height=5, width=8, encod="MacRoman")
 ```
 
 **Supplemental Figure S2a,b-- TP and Sum V combined**
@@ -1046,7 +1037,7 @@ TP.sumV.plots<- plot_grid(TP + ggtitle("")+
                        annotate(geom="text", size=2.2, label="(b)", x=0.7, y=3, color="black"),
                        ncol=2,nrow=1)
 plot_grid(TP.sumV.plots, leg4, rel_widths = c(6, 1)) # legend  1/3 size as first obj.
-dev.copy(pdf, "figures/Fig S3.TP.sumV.pdf", width = 7, height = 5, encod="MacRoman")
+dev.copy(pdf, "figures/execute code/Fig S2.TP.sumV.pdf", width = 7, height = 5, encod="MacRoman")
 dev.off()
 ```  
   
@@ -1054,9 +1045,9 @@ dev.off()
 Mean-normalized data is important for comparing across species, times, or locations. This is accomplished by taking the across sample mean for the amino acid (AA) of choice, then subtracting the raw AA value from the mean. We did this for the essential AA (EAA) of carbon: Leucine, Isoleucine, Phenylalanine, Threonine, Lysine, Valine.  
   
 Uses linear discrimination analyses (LDA) of the mean-normalized EAA in symbiont and plankton+POM from Oahu (this study) and those reported in Fox et al (2019, FuncEcol) to act as training data for sources of autotrophic vs. heterotrophic nutrition. The training data is then applied to the coral species in the two studies (*M. capitata* and *Pocillopora meandrina*) to assign coral IDs, asking if the corals align with either autotrophic or heterotrophic groups.  
-  
-Combine the data from Oahu and Palmyra
+
 ### d13C-AA data from Fox et al
+Combine the data from Oahu and Palmyra and run LDA analysis as performed in Fox et al.   
 ```{r, Palmyra data}
 ##### Palmyra data
 Fox.data<-read.csv("data/Palmyra_AAd13C.csv")
@@ -1106,9 +1097,7 @@ Pacific.AA$Fraction<-factor(Pacific.AA$Fraction, levels=c("host.Pal", "host.HI",
                             "plank.Pal", "plank.HI", "POM.Pal"))
 
 ```
-  
-Run LDA analysis as performed in Fox et al. 
-```{r, Pacific data source normalized, fig.cap="*Figure 4a*. Linear discriminant analysis of carbon isotope fingerprints using mean-normalized values of six essential amino acids (isoleucine, leucine, lysine, phenylalanine, threonine, tyrosine, valine). Ellipses represent 95% confidence ellipses for each nutrition group (autotrophy [symbiont] or heterotrophy [plankton-POM). Hawaii data are host (n=6), symbiont (n=6) and plankton (n=1); Palmyra data are host (n = 19), symbionts (n=11), plankton (n=9) and POM (n=8) (Fox et al. 2019)."}
+```{r, Pacific data source normalized, fig.cap="*Figure 4a*. Linear discriminant analysis of carbon isotope fingerprints using mean-normalized values of six essential amino acids (isoleucine, leucine, lysine, phenylalanine, threonine, tyrosine, valine). Ellipses represent 95% confidence ellipses for each nutrition group (autotrophy [symbiont] or heterotrophy [plankton-POM). Hawaii data are host (n=6), symbiont (n=6) and plankton (n=1); Palmyra data are host (n = 19), symbionts (n=11), plankton (n=9) and POM (n=8) (Fox et al. 2019).", fig.dim=c(6,4)}
 ######## For manuscript
 
 ####### using normalized data 
@@ -1253,10 +1242,12 @@ dat_ell.norm.EAA.source<-dat_ell.norm.EAA[!(dat_ell.norm.EAA$Fraction.source2=="
 
 # add back Location column
 EAA.frac.LD.norm.meta$Location<-Pac.ess.norm.df$Location
+EAA.frac.LD.norm.meta$Location<-revalue(EAA.frac.LD.norm.meta$Location,
+                                       c("Oahu"="Hawaii"))
 
 # order factor
 EAA.frac.LD.norm.meta$Fraction.grouped<-factor(EAA.frac.LD.norm.meta$Fraction.grouped,
-                                                    levels=c("animal", "symbiont", "plankton", "POM"))
+                                             levels=c("animal", "symbiont", "plankton", "POM"))
 
 # Fraction colors
 frac.color<-c("coral", "springgreen3", "steelblue1", "skyblue4")
@@ -1279,10 +1270,10 @@ LDA.EAA.frac.norm<-ggplot(EAA.frac.LD.norm.meta, aes(LD1, LD2)) +
 
 
 print(LDA.EAA.frac.norm)
-ggsave("figures/Fig 4a. LDA analysis.pdf", height=5, width=5)
+ggsave("figures/execute code/Fig 4a. LDA analysis.pdf", height=5, width=5)
 ```
   
-```{r, Pacific Red Sea data source normalized, fig.cap="*Figure 4b*. Linear discriminant analysis of carbon isotope fingerprints of corals, symbionts, and plankton in Palmyra, Hawai'i, and Red Sea using mean-normalized values of five essential amino acids (isoleucine, leucine, phenylalanine, threonine, tyrosine, valine). Ellipses represent 95% confidence ellipses for each nutrition group (autotrophy [symbiont] or heterotrophy [plankton-POM)."}
+```{r, Pacific Red Sea data source normalized, fig.cap="*Figure 4b*. Linear discriminant analysis of carbon isotope fingerprints of corals, symbionts, and plankton in Palmyra, Hawai'i, and Red Sea using mean-normalized values of five essential amino acids (isoleucine, leucine, phenylalanine, threonine, tyrosine, valine). Ellipses represent 95% confidence ellipses for each nutrition group (autotrophy [symbiont] or heterotrophy [plankton-POM).", fig.dim=c(6,4)}
 ########################################################################
 #########################################################################
 
@@ -1460,7 +1451,7 @@ LDA.EAA.frac.norm.PR<-ggplot(EAA.frac.LD.norm.meta.PR, aes(LD1, LD2)) +
 
 #LDA plot
 print(LDA.EAA.frac.norm.PR)
-ggsave("figures/Fig 4b. LDA.PacRedSea.pdf", height=5, width=5)
+ggsave("figures/execute code/Fig 4b. LDA.PacRedSea.pdf", height=5, width=5)
 ##############################################################
 
 ```
@@ -1468,7 +1459,7 @@ ggsave("figures/Fig 4b. LDA.PacRedSea.pdf", height=5, width=5)
   
 Compare the mean values of d13C-AA for samples of plankton and POM in Palmyra (Fox et al, 2019) with those of our study. This is *Figure S4*
 
-```{r Pac means, fig.cap="*Figure S4*. Comparison of δ13C values for non-essential and essential amino acids in a pooled plankton sample from Kāne‘ohe Bay, O‘ahu, Hawai‘i and plankton and POM from Palmyra (reported in (Fox et al. 2019)). Values are mean ± SE (n=6 - 9), except for the Hawai‘i plankton (n=1)."}
+```{r Pac means, fig.cap="*Figure S4*. Comparison of δ13C values for non-essential and essential amino acids in a pooled plankton sample from Kāne‘ohe Bay, O‘ahu, Hawai‘i and plankton and POM from Palmyra (reported in (Fox et al. 2019)). Values are mean ± SE (n=6-9), except for the Hawai‘i plankton (n=1).", fig.dim=c(6,6)}
 # summary of means, pretty close
 library(dplyr)
 plank.meta<-Pacific.AA[(Pacific.AA$Fraction=="plank.HI" | 
@@ -1519,7 +1510,7 @@ d13C.plank.POM.meta<-ggplot(df.mean.pl, aes(x=AA, y=d13C.AA, group=Fraction, sha
   Fig.formatting
 
 print(d13C.plank.POM.meta)
-ggsave("figures/Fig S4. Pacific.plank.means.pdf", height=5, width=6, encod="MacRoman")
+ggsave("figures/execute code/Fig S4. Pacific.plank.means.pdf", height=5, width=6, encod="MacRoman")
 ```
 
   
@@ -1620,7 +1611,7 @@ PCA.plank <- ggbiplot(PC.plank, choices = 1:2, obs.scale = 1, var.scale = 1,
 ##############################################################
 #PCA plot
 #print(PCA.plank)
-#ggsave("figures/Fig S5a. PCA.EAAn.plank.pdf", height=5, width=5)
+#ggsave("figures/execute code/Fig S5a. PCA.EAAn.plank.pdf", height=5, width=5)
 
 
 ##############################################################
@@ -1651,7 +1642,7 @@ geom_point(aes(colour=Algae_plank.ess.norm$Fraction,
 
 #PCA plot
 #print(PCA.plank.sym)
-#ggsave("figures/Fig S5b. PCA.EAAn.plan.alg.symb.pdf", height=5, width=5)
+#ggsave("figures/execute code/Fig S5b. PCA.EAAn.plan.alg.symb.pdf", height=5, width=5)
 
 ##############################################################
 #########
@@ -1679,6 +1670,6 @@ PCAs.supp<-plot_grid((PCA.plank.mod +
 
 #PCA plot
 print(PCAs.supp)
-ggsave("figures/Fig S5comb. PCA.EAAn.plan.alg.symb.pdf", height=5, width=9)
+ggsave("figures/execute code/Fig S5comb. PCA.EAAn.plan.alg.symb.pdf", height=5, width=9)
 
 ```
