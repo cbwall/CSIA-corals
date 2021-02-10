@@ -40,8 +40,11 @@ Compound specific isotope analyses (CSIA) and multivariate ‘isotope fingerprin
       - AA-CSIA for weighted mean calculations  
       
   **percent heterotrophy** *folder*  
-    - spreadsheets to calculate percent heterotrophy in mixing models
+    - spreadsheets to calculate percent heterotrophy in mixing models  
       
 #### FIGURES *folder*  
    *execute code* -- these are outputs from the code chunks in R  
    *Main Tables and Figures* -- these are found in the manuscript text, slightly modified figure outputs  
+   
+#### OUTPUT *folder*  
+   - assorted outputs from running Rmd code, some used in figure and table summaries
