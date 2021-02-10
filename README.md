@@ -48,4 +48,4 @@ Compound specific isotope analyses (CSIA) and multivariate ‘isotope fingerprin
    *Main Tables and Figures* -- these are found in the manuscript text, slightly modified figure outputs  
    
 #### OUTPUT *folder*  
-   - assorted outputs from running Rmd code, some used in figure and table summaries
+   *assorted outputs from running Rmd code, some used in figure and table summaries*
