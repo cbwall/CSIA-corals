@@ -6,28 +6,35 @@ Compound specific isotope analyses (CSIA) and multivariate ‘isotope fingerprin
 ### Directory information   
   
 #### CSIA-AA-corals.html  
-*html file for Rmd output*  
-To open the html output you must first download it and open it in from your computer (it opens with plots and code embedded).
+   *html file for Rmd output*  
+   To open the html output you must first download it and open it in from your computer (it opens with plots and code embedded).
   
-#### CSIA-AA-corals.Rmd  
-*R markdown for project*   
-This is the markdown script that generates the html and executes all code
+#### CSIA-AA-corals.Rmd   
+   *R markdown for project*   
+   This is the markdown script that generates the html and executes all code
   
 #### CSIA-AA.Rproj  
-*R project to run Rmd and directory*  
-If you open RStudio-- load the Project, open the Rmd and code away!
+   *R project to run Rmd and directory*  
+   If you open RStudio-- load the Project, open the Rmd and code away!
   
 #### DATA   *houses the following folders and files*  
-      - *bulkCN.isotopes.csv* bulk isotope data for corals, their symbionts, plankton sample
-      - *d13C.CSIA.long.csv* long format carbon AA-CSIA data
-      - *d13C.CSIA.wide.csv* wide format carbon AA-CSIA data
-      - *d15N.CSIA.long.csv* long format nitrogen AA-CSIA data
-      - *d15N.CSIA.wide.csv* wide format nitrogen AA-CSIA data
-      - *Pacif_RedS_Aloha_source_AAd13C.csv* data from Palmyra, Red Sea, Station Aloha, present study (Oahu) -- includes coral, symbionts, cultured algae and POM/plankton 
-      - *Pacific.Redsea.EAA_full.df* data for Palmyra, Red Sea, Hawaii exclusive to corals, symbionts, POM/plankton
-      - *Palmyra_AAd13C.csv* coral, symbiont, POM/plankton data from Fox et al. 2019 Functional Ecology
-      - *sumV.csv* AA-CSIA for sumV calculations
-      - *wt.means.d15N.csv* AA-CSIA for weighted mean calculations
+   *bulkCN.isotopes.csv*  
+      bulk isotope data for corals, their symbionts, plankton sample  
+   *d13C.CSIA.long.csv*  
+      long format carbon AA-CSIA data  
+   *d13C.CSIA.wide.csv*  
+      wide format carbon AA-CSIA data  
+   *d15N.CSIA.long.csv*  
+      long format nitrogen AA-CSIA data  
+   *d15N.CSIA.wide.csv*  
+      wide format nitrogen AA-CSIA data  
+   *Pacif_RedS_Aloha_source_AAd13C.csv*  
+      data from Palmyra, Red Sea, Station Aloha, present study (Oahu) -- includes coral, symbionts, cultured algae and POM/plankton  
+   *Pacific.Redsea.EAA_full.df*  
+      data for Palmyra, Red Sea, Hawaii exclusive to corals, symbionts, POM/plankton  
+   *Palmyra_AAd13C.csv* coral, symbiont, POM/plankton data from Fox et al. 2019 Functional Ecology
+   *sumV.csv* AA-CSIA for sumV calculations
+   *wt.means.d15N.csv* AA-CSIA for weighted mean calculations
   **percent heterotrophy** *folder*
-      - spreadsheets to calculate percent heterotrophy in mixing models
+    - spreadsheets to calculate percent heterotrophy in mixing models
       
