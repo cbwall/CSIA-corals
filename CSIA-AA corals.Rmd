@@ -1569,6 +1569,8 @@ Algae_plank.ess.norm$Location<-factor(Algae_plank.ess.norm$Location,
 # to match other figures
 Algae_plank.ess.norm$Location<-revalue(Algae_plank.ess.norm$Location, c("Oahu"="Hawaii"))
 
+
+write.csv(Algae_plank.ess.norm, "outputAlgae_plank.ess.norm.csv")
 ##############################################################
 ######## PCA
 ##############################################################
